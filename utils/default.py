@@ -2,7 +2,7 @@ __all__ = ['Default']
 
 from dataclasses import dataclass
 
-from discord import Object as D_Objct
+from discord import Object as D_Object
 
 
 @dataclass
