@@ -1,17 +1,16 @@
-import discord
-import os
-from discord.ext import commands
-from discord import app_commands
+from os import getenv
+from discord import Intents
+from discord.ext.commands import Bot
 from dotenv import load_dotenv
 load_dotenv()
 
 
 
-class Bot(commands.Bot):
+class Bot(Bot):
     def __init__(self) -> None:
         super().__init__(
-            application_id=os.getenv("application_id"),
-            intents=discord.Intents.default()
+            application_id=getenv("application_id"),
+            intents=Intents.default()
         )
 
     async def on_ready(self) -> None:
@@ -22,4 +21,4 @@ class Bot(commands.Bot):
         pass
 
 if __name__ == '__main__':
-    Bot().run(os.getenv("token"))
+    Bot().run(getenv("token"))
