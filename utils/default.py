@@ -27,5 +27,6 @@ class Color:
 
 @dataclass
 class Default:
-	SERVER: D_Object = D_Object(id=843994109366501376)
+	SERVER: D_Object = D_Object(id=1060218266670346370)
 	COLOR: int = Color.NEON
+	FOOTER: str = "Dynamo © 2023"

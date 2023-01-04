@@ -12,26 +12,21 @@ load_dotenv(f"{getcwd()}/utils/.env")
 from utils import Default, log
 
 
-class Watching(Activity):
-	def __init__(self, text: str) -> None:
-		super().__init__(name=text, type=ActivityType.watching)
-
-
 class Dynamo(Bot):
-	def __init__(self) -> None:
+	def __init__(self, intents: Intents) -> None:
 		super().__init__(
 			command_prefix="dynamo.",
 			case_sensitive=False,
 			status=Status.online,
-			intents=Intents.default(),
+			intents=intents,
 			application_id=environ.get("APP_ID"),
-			description="User engagement bot"
+			description="User engagement bot",
 		)
 
 	
 	@loop(seconds=30.0)
 	async def continous_handler(self) -> None:
-		self.activity = Watching(f"{len(self.users)} members")
+		await self.change_presence(activity=Activity(name=f"{len(self.users)} members", type=ActivityType.watching))
 
 	@continous_handler.before_loop
 	async def before_continous_handler(self) -> None:
@@ -39,7 +34,7 @@ class Dynamo(Bot):
 		
 		await self.wait_until_ready()
 
-		log("status", "ready to start 'continous_handler'")
+		log("status", "started 'continous_handler'")
 
 
 	async def on_ready(self) -> None:
@@ -70,8 +65,9 @@ class Dynamo(Bot):
 
 		self.continous_handler.start()
 
-		log("status", "started 'continous_handler'")
-
 
 if __name__ == '__main__':
-	Dynamo().run(environ.get("TOKEN"))
+	intents: Intents = Intents.default()
+	intents.members = True
+
+	Dynamo(intents).run(environ.get("TOKEN"))
