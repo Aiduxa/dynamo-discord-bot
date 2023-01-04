@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv(f"{getcwd()}/utils/.env")
 
 from utils import Default, log
+from utils.database import pool as db
 
 
 class Watching(Activity):
@@ -47,6 +48,16 @@ class Dynamo(Bot):
 
 
 	async def setup_hook(self) -> None:
+
+		try:
+			await db.init()
+		except Exception as e:
+			log("error", "Failed to intialise database")
+			print_tb(e)
+		else:
+			log("status", "Initialised database")
+
+
 		for cog in listdir(f"{getcwd()}/cogs"):
 			if not cog.endswith(".py"):
 				continue

@@ -2,7 +2,7 @@ from discord.ext.commands import Cog, Bot, Context
 from discord.app_commands import command as slash_command, guilds, describe
 from discord import Interaction
 
-from ..utils import Default
+from utils import Default
 
 
 class Developer(Cog):
@@ -19,7 +19,7 @@ class Developer(Cog):
 
 
 	@slash_command(description="Developer command")
-	@guilds([Default.SERVER])
+	@guilds(Default.SERVER)
 	@describe(message="The message the bot will say")
 	async def spk(self, inter: Interaction, message: str) -> None:
 		await inter.response.send_message(message)
