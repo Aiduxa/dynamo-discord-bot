@@ -5,12 +5,10 @@ from __future__ import annoations # makes it so we can pass "Database" as a retu
 from asyncpg.pool import Pool
 from asyncpg.connection import Connection # not sure about this
 
-from ..main import bot
-
 
 class Database:
-    def __init__(self) -> None:
-        self.pool: Pool = bot.POOL
+    def __init__(self, pool: Pool) -> None:
+        self.pool = pool
         self.connection: Connection | None = None
 
     async def __aenter__(self) -> "Database":
