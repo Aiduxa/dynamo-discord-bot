@@ -1,28 +1,44 @@
-__all__ = ['Database'] # whatever u put here will be imported when an everything import is attempted "from x import *"
-
-from __future__ import annoations # makes it so we can pass "Database" as a return type.
-
 from asyncpg.pool import Pool
-from asyncpg.connection import Connection # not sure about this
+from asyncpg import PostgresError
+
+from traceback import print_tb
+
+"""
+Notes for myself:
+
+use acquire() when using a singular query execution
+
+"""
+
+async def create_user(pool: Pool, user_id: int, servers_ids: list[int]) -> None:
+    async with pool.acquire() as connection:
+        await connection.execute("INSERT INTO users(id, servers) VALUES ($1, $2,)", user_id, servers_ids)
 
 
-class Database:
-    def __init__(self, pool: Pool) -> None:
-        self.pool = pool
-        self.connection: Connection | None = None
+async def update_user(pool: Pool, user_id: int, column: str, value: any) -> None:
+    async with pool.acquire() as connection:
+        await connection.execute(f"UPDATE users SET {column} = $1 WHERE id = $2", value, user_id)
 
-    async def __aenter__(self) -> "Database":
-        self.connection = self.pool.acquire()
+async def get_user(pool : Pool, user_id : int) -> list:
+    async with pool.acquire() as connection:
+        return await connection.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
 
-        return self
+async def delete_user(pool: Pool, user_id: int) -> None:
+    async with pool.acquire() as connection:
+        await connection.execute("DELETE FROM users WHERE id = $1", user_id)
 
-    async def __aexit__(self, *args) -> None:
-        await self.connection.close()
 
 
-    async def get_user(user_id: int) -> list:
-        assert self.connection != None # makes sure we got a connection
+async def execute(pool: Pool, query: str, *args) -> list | None:
+    async with pool.acquire() as connection:
+        result: list = None
+        try:
+            if args:
+                result: list = [connection.fetch(query, *args)]
+            else:
+                await connection.execute(query)
+        except Exception as e: print_tb(e)
+        else: return result
+            
 
-        query: str = "SELECT * FROM users WHERE id = $1"
 
-        return await self.connection.fetchrow(query, user_id)

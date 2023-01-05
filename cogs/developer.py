@@ -1,7 +1,10 @@
-from discord.ext.commands import Cog, Bot, Context, command, is_owner
+
+from discord import Interaction
+from discord.ext.commands import Cog, Bot, Context, is_owner
+from discord.app_commands import command
 from traceback import print_tb
 
-from utils import Default, log
+from utils import Default, log, database
 
 
 class Developer(Cog):
@@ -19,20 +22,26 @@ class Developer(Cog):
 
 	@command(description="Developer command")
 	@is_owner()
-	async def reload(self, ctx, *args) -> None:
-		for cog in args:
-			try:
-				await self.bot.reload_extension(f"cogs.{cog[:-3]}")
-				log("status", f"reloaded '{cog}'")
+	async def reload(self, inter : Interaction, cog : str) -> None:
+		try:
+			await self.bot.reload_extension(f"cogs.{cog[:-3]}")
+			log("status", f"reloaded '{cog}'")
 
-			except Exception as e:
-				log("error", f"failed to reload '{cog}'")
-				print_tb(e)
-			
+		except Exception as e:
+			log("error", f"failed to reload '{cog}'")
+			print_tb(e)
+		
 		else:
-			await ctx.send("Reloaded cog(s) :white_check_mark:")
+			await inter.response.send_message("Reloaded cog(s) :white_check_mark:")
 
+	@command(description="Developer command")
+	@is_owner()
+	async def custom(self, inter: Interaction, query: str, *args) -> None:
+		msg: str = ""
 
+		msg = await database.execute(self.bot.POOL, query, *args)
+
+		await inter.response.send_message(msg, ephemeral=True)
 
 
 
