@@ -5,6 +5,8 @@ from discord import Activity, ActivityType, Status, Intents
 from discord.ext.commands import Bot
 from discord.ext.tasks import loop
 
+from asyncpg.pool import Pool
+
 from dotenv import load_dotenv
 
 load_dotenv(f"{getcwd()}/utils/.env")
@@ -12,11 +14,11 @@ load_dotenv(f"{getcwd()}/utils/.env")
 from utils import Default, log
 from utils.database import pool as db
 
-from asyncpg import pool, create_pool
-
 
 class Dynamo(Bot):
 	def __init__(self, intents: Intents) -> None:
+                self.POOL: Pool | None = None
+
 		super().__init__(
 			command_prefix="dynamo.",
 			case_sensitive=False,
@@ -47,18 +49,8 @@ class Dynamo(Bot):
 
 	async def setup_hook(self) -> None:
 
-		sql_config = {
-		'dsn': environ.get("postgres_dsn"),
-		'user': environ.get("postgres_user"),
-		'password': environ.get("postgres_password"),
-		'host': environ.get("postgres_host"),
-		'database': environ.get("postgres_db"),
-		'port': environ.get("postgres_port")
-		}
-
-
 		try:
-			self.bot.POOL = await create_pool(**sql_config)
+			await db.init()
 		except Exception as e:
 			log("error", f"failed to initialise the database")
 			print_tb(e)

@@ -1,8 +1,9 @@
-from __future__ import annotations
-__all__ = ['Database']
+__all__ = ['Database'] # whatever u put here will be imported when an everything import is attempted "from x import *"
+
+from __future__ import annoations # makes it so we can pass "Database" as a return type.
 
 from asyncpg.pool import Pool
-from asyncpg.connection import Connection
+from asyncpg.connection import Connection # not sure about this
 
 from ..main import bot
 
