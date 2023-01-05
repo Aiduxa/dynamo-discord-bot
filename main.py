@@ -56,7 +56,7 @@ class Dynamo(Bot):
     }
 
 		try:
-			bot.POOL = await create_pool(**db_config)
+			self.POOL = await create_pool(**db_config)
 		except Exception as e:
 			log("error", "Failed to intialise database")
 			print_tb(e)
