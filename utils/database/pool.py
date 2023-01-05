@@ -18,10 +18,7 @@ async def init() ->  pool.Pool:
     'database': environ.get("database"),
     'port': environ.get("port")
     }
-    
-    ctx = ssl.create_default_context(cafile='')
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+
 
     global POOL
-    POOL = await create_pool(**sql_config, ssl=ctx)
+    POOL = await create_pool(**sql_config)
