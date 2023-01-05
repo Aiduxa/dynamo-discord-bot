@@ -12,6 +12,8 @@ load_dotenv(f"{getcwd()}/utils/.env")
 from utils import Default, log
 from utils.database import pool as db
 
+from asyncpg import pool, create_pool
+
 
 class Dynamo(Bot):
 	def __init__(self, intents: Intents) -> None:
@@ -23,6 +25,7 @@ class Dynamo(Bot):
 			application_id=environ.get("APP_ID"),
 			description="User engagement bot",
 		)
+		self.POOL: pool.Pool | None = None
 
 	
 	@loop(seconds=30.0)
@@ -44,13 +47,23 @@ class Dynamo(Bot):
 
 	async def setup_hook(self) -> None:
 
+		sql_config = {
+		'dsn': environ.get("postgres_dsn"),
+		'user': environ.get("postgres_user"),
+		'password': environ.get("postgres_password"),
+		'host': environ.get("postgres_host"),
+		'database': environ.get("postgres_db"),
+		'port': environ.get("postgres_port")
+		}
+
+
 		try:
-			await db.init()
+			self.bot.POOL = await create_pool(**sql_config)
 		except Exception as e:
-			log("error", "Failed to intialise database")
+			log("error", f"failed to initialise the database")
 			print_tb(e)
 		else:
-			log("status", "Initialised database")
+			log("status", "database initialised")
 
 
 		for cog in listdir(f"{getcwd()}/cogs"):
@@ -80,5 +93,6 @@ class Dynamo(Bot):
 if __name__ == '__main__':
 	intents: Intents = Intents.default()
 	intents.members = True
+	intents.messages = True
 
 	Dynamo(intents).run(environ.get("TOKEN"))

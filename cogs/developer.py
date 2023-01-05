@@ -1,6 +1,4 @@
-from discord.ext.commands import Cog, Bot, Context
-from discord.app_commands import command as slash_command, guilds, describe
-from discord import Interaction
+from discord.ext.commands import Cog, Bot, Context, command, is_owner
 from traceback import print_tb
 
 from utils import Default, log
@@ -19,19 +17,10 @@ class Developer(Cog):
 		return self.bot.is_owner()
 
 
-	@slash_command(description="Developer command")
-	@guilds(Default.SERVER)
-	@describe(message="The message the bot will say")
-	async def spk(self, inter: Interaction, message: str) -> None:
-		await inter.response.send_message(message)
-
-
-	@slash_command(description="Developer command")
-	@guilds(Default.SERVER)
-	@describe(message="Reloads a cog or cogs")
-	async def reload(self, inter: Interaction, *args) -> None:
+	@command(description="Developer command")
+	@is_owner()
+	async def reload(self, ctx, *args) -> None:
 		for cog in args:
-
 			try:
 				await self.bot.reload_extension(f"cogs.{cog[:-3]}")
 				log("status", f"reloaded '{cog}'")
@@ -41,7 +30,7 @@ class Developer(Cog):
 				print_tb(e)
 			
 		else:
-			await inter.response.send_message("Reloaded cog(s) :white_check_mark:")
+			await ctx.send("Reloaded cog(s) :white_check_mark:")
 
 
 
