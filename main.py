@@ -2,7 +2,7 @@ from os import environ, getcwd, listdir
 from traceback import print_tb
 
 from discord import Activity, ActivityType, Status, Intents
-from discord.ext.commands import Bot
+from discord.ext.commands import Bot, when_mentioned_or, DefaultHelpCommand
 from discord.ext.tasks import loop
 
 from asyncpg.pool import Pool
@@ -20,7 +20,7 @@ class Dynamo(Bot):
 			self.POOL: Pool | None = None
 
 			super().__init__(
-				command_prefix="dynamo.",
+				command_prefix=when_mentioned_or(Default.PREFIX),
 				case_sensitive=False,
 				status=Status.online,
 				intents=intents,
@@ -92,9 +92,12 @@ class Dynamo(Bot):
 		self.continous_handler.start()
 
 
-if __name__ == '__main__':
-	intents: Intents = Intents.default()
-	intents.members = True
-	intents.messages = True
+intents: Intents = Intents.default()
+intents.members = True
+intents.messages = True
 
-	Dynamo(intents).run(environ.get("token"))
+bot = Dynamo(intents)
+
+
+if __name__ == '__main__':
+	bot.run(environ.get("token"))

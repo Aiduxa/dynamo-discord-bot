@@ -31,6 +31,7 @@ class Default:
 	COLOR: int = Color.NEON
 	FOOTER: str = "Dynamo © 2023"
 	MULTIPLIER: float = 10.0
+	PREFIX: str = "dyn."
 
 @dataclass
 class ActivityRank:
