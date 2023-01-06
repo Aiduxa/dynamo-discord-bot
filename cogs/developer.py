@@ -1,6 +1,9 @@
 from discord.ext.commands import Cog, Bot, Context, command, ExtensionNotFound, ExtensionAlreadyLoaded, ExtensionNotLoaded
 
 from os import listdir, getcwd
+import sys
+from io import StringIO
+from traceback import print_stack
 
 from utils import log
 
@@ -16,6 +19,31 @@ class Developer(Cog):
 		super().cog_check(ctx)
 
 		return await self.bot.is_owner(ctx.author)
+
+
+	@command(help="Evaluate python code", aliases=['py', 'e'])
+	async def eval(self, ctx: Context, *, code: str):
+		old_stdout = sys.stdout
+		redirected_output = sys.stdout = StringIO()
+		
+		try: exec(str(code))
+		except Exception as _error:
+			print_stack(file=sys.stdout)
+			print(sys.exc_info())
+
+		sys.stdout = old_stdout
+		
+		output = str(redirected_output.getvalue())
+
+		MAX_LENGTH: int = 1984
+
+		for i in range(0, len(output), MAX_LENGTH):
+			output_message: str = f"```bash\n{output[i:i+MAX_LENGTH]}\n```"
+			
+			try:
+				await ctx.message.reply(output_message)
+			except Exception:
+				await ctx.send(output_message)
 
 
 	async def format_cog_error(self, error: Exception) -> str:
@@ -157,7 +185,6 @@ class Developer(Cog):
 				error: str = await self.format_cog_error(result)
 
 				await ctx.send(f":warning: failed to unload `{cog}`:\n{error}")
-
 
 
 async def setup(bot: Bot) -> None:
