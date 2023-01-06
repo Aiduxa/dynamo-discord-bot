@@ -46,7 +46,7 @@ class Developer(Cog):
 		else:
 			return True
 
-	@command(help="Load cog(s)")
+	@command(help="Load cog(s)", aliases=['l'])
 	async def load(self, ctx: Context, *cogs) -> None:
 		try: await ctx.message.delete()
 		except: pass
@@ -83,7 +83,7 @@ class Developer(Cog):
 		else:
 			return True
 
-	@command(help="Reload cog(s)")
+	@command(help="Reload cog(s)", aliases=['r'])
 	async def reload(self, ctx: Context, *cogs) -> None:
 		try: await ctx.message.delete()
 		except: pass
@@ -120,11 +120,11 @@ class Developer(Cog):
 		else:
 			return True
 
-	@command(help="Unload cog(s)")
+	@command(help="Unload cog(s)", aliases=['u'])
 	async def unload(self, ctx: Context, *cogs) -> None:
 		try: await ctx.message.delete()
 		except: pass
-		
+
 		if (not (cogs)) or (cogs[0].lower() == "all".lower()):
 			for cog in listdir(f"{getcwd()}/cogs"):
 				if cog.endswith('.py'):
