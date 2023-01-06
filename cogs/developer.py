@@ -1,12 +1,12 @@
 from discord.ext.commands import Cog, Bot, Context, command, ExtensionNotFound, ExtensionAlreadyLoaded, ExtensionNotLoaded
-from discord import File
+from discord import File, Embed
 
 from os import listdir, getcwd
-import sys
 from io import StringIO, BytesIO
-from traceback import print_stack
+from functools import partial
+from traceback import format_exception
 
-from utils import log
+from utils import Default, log
 
 
 class Developer(Cog):
@@ -24,37 +24,33 @@ class Developer(Cog):
 
 	@command(help="Evaluate python code", aliases=['py', 'e'])
 	async def eval(self, ctx: Context, mobile_friendly: bool | None = False, *, code: str):
-		old_stdout = sys.stdout
-		redirected_output = sys.stdout = StringIO()
-		
-		try: exec(str(code))
-		except Exception as _error:
-			print_stack(file=sys.stdout)
-			print(sys.exc_info())
+		output = StringIO()
 
-		sys.stdout = old_stdout
-		
-		output = str(redirected_output.getvalue())
+		injected_print = partial(print, file=output)
+
+		locals_copy = locals().copy()
+		locals_copy["print"] = injected_print
+
+		try:
+			exec(str(code), None, locals_copy)
+		except Exception as error:
+			injected_print(''.join(format_exception(error)))
+
+		code_output = output.getvalue()
 
 		if mobile_friendly:
-			MAX_LENGTH: int = 1984
+			MAX_LENGTH: int = 4096 - 14
 
-			for i in range(0, len(output), MAX_LENGTH):
-				output_message: str = f"```bash\n{output[i:i+MAX_LENGTH]}\n```"
+			for i in range(0, len(code_output), MAX_LENGTH):
+				output_message = Embed(description=f"```bash\n{code_output[i:i+MAX_LENGTH]}\n```", color=Default.COLOR)
 				
-				try:
-					await ctx.message.reply(output_message)
-				except Exception:
-					await ctx.send(output_message)
+				await ctx.message.reply(embed=output_message)
 		
 		else:
-			bytes_message: BytesIO = BytesIO(output.encode())
+			bytes_message: BytesIO = BytesIO(code_output.encode())
 			message_file = File(bytes_message, filename="output")
 
-			try:
-				await ctx.message.reply(file=message_file)
-			except Exception:
-				await ctx.send(file=message_file)
+			await ctx.message.reply(file=message_file)
 
 
 	async def format_cog_error(self, error: Exception) -> str:
