@@ -5,7 +5,6 @@ from os import listdir, getcwd
 import sys
 from io import StringIO, BytesIO
 from traceback import print_stack
-from typing import Optional
 
 from utils import log
 
@@ -24,7 +23,7 @@ class Developer(Cog):
 
 
 	@command(help="Evaluate python code", aliases=['py', 'e'])
-	async def eval(self, ctx: Context, mobile_friendly: Optional[bool] = False, *, code: str):
+	async def eval(self, ctx: Context, mobile_friendly: bool | None = False, *, code: str):
 		old_stdout = sys.stdout
 		redirected_output = sys.stdout = StringIO()
 		
