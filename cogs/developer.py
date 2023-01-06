@@ -34,15 +34,6 @@ class Developer(Cog):
 		else:
 			await inter.response.send_message("Reloaded cog(s) :white_check_mark:")
 
-	@command(description="Developer command")
-	@is_owner()
-	async def custom(self, inter: Interaction, query: str, *args) -> None:
-		msg: str = ""
-
-		msg = await database.execute(self.bot.POOL, query, *args)
-
-		await inter.response.send_message(msg, ephemeral=True)
-
 
 
 

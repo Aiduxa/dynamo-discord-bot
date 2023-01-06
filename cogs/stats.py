@@ -1,6 +1,6 @@
 from discord.ext.commands import GroupCog, Bot
-from discord.app_commands import command, guilds
-from discord import Interaction, Embed, Member
+from discord.app_commands import command, guilds, autocomplete, Choice
+from discord import Interaction, Embed, Member, Guild
 
 from random import randint
 
@@ -14,16 +14,26 @@ class Stats(GroupCog, name="stats"):
 		super().__init__()
 
 
+	async def guild_autocomplete(self, _inter: Interaction, current: Guild) -> list[Choice[str]]:
+		return [Choice(name=guild.name, value=str(guild.id)) for guild in self.bot.guilds if current.lower() in guild.name.lower()][:25]
+
+
 	@command(description="View the guild's stats")
 	@guilds(Default.SERVER)
-	async def guild(self, inter: Interaction) -> None:
-		members_count: int = inter.guild.member_count or 0
+	@autocomplete(guild=guild_autocomplete)
+	async def guild(self, inter: Interaction, guild: str | None = None) -> None:		
+		if guild != None:
+			guild = await self.bot.fetch_guild(int(guild))
+		else:
+			guild = inter.guild
+
+		members_count: int = guild.member_count or 0
 
 		embed = Embed(title="Stats", description=f":zap: **Guild-Activity:** `{members_count * randint(1,1000000)}`", color=Default.COLOR)
 
-		embed.set_author(name=inter.guild.name, icon_url=inter.guild.icon.url if inter.guild.icon else "")
+		embed.set_author(name=guild.name, icon_url=guild.icon.url if guild.icon else "")
 		embed.set_footer(text=Default.FOOTER)
-		embed.set_image(url=inter.guild.banner.url if inter.guild.banner else "")
+		embed.set_image(url=guild.banner.url if guild.banner else "")
 
 		ranked_members: str = "`0` :blue_square: **Super-Active**\n`0` :green_square: **Active**\n`0` :red_square: **Unactive**"
 

@@ -1,4 +1,4 @@
-__all__ = ['log', 'Color', 'Default']
+__all__ = ['log', 'Color', 'Default', 'ActivityRank']
 
 
 from datetime import datetime
@@ -30,3 +30,10 @@ class Default:
 	SERVER: D_Object = D_Object(id=1060218266670346370)
 	COLOR: int = Color.NEON
 	FOOTER: str = "Dynamo © 2023"
+	MULTIPLIER: float = 10.0
+
+@dataclass
+class ActivityRank:
+	SUPERACTIVE: int = 3.0
+	ACTIVE: int = 1.5
+	ONLINE: int = 1

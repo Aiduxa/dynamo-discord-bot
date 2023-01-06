@@ -18,6 +18,7 @@ from utils import Default, log
 class Dynamo(Bot):
 	def __init__(self, intents: Intents) -> None:
 			self.POOL: Pool | None = None
+
 			super().__init__(
 				command_prefix="dynamo.",
 				case_sensitive=False,
@@ -25,7 +26,7 @@ class Dynamo(Bot):
 				intents=intents,
 				application_id=environ.get("APP_ID"),
 				description="User engagement bot",
-		)
+			)
 
 	
 	@loop(seconds=30.0)
@@ -46,45 +47,48 @@ class Dynamo(Bot):
 
 
 	async def setup_hook(self) -> None:
-		db_config = {
-		'dsn': environ.get("postgres_dsn"),
-		'user': environ.get("postgres_user"),
-		'password': environ.get("postgres_password"),
-		'host': environ.get("postgres_host"),
-		'database': environ.get("postgres_db"),
-		'port': environ.get("postgres_port")
-    }
+		# initalizing database
+		# db_config = {
+		# 	'dsn': environ.get("postgres_dsn"),
+		# 	'user': environ.get("postgres_user"),
+		# 	'password': environ.get("postgres_password"),
+		# 	'host': environ.get("postgres_host"),
+		# 	'database': environ.get("postgres_db"),
+		# 	'port': environ.get("postgres_port")
+		# }
 
-		try:
-			self.POOL = await create_pool(**db_config)
-		except Exception as e:
-			log("error", f"failed to initialise the database")
-			print_tb(e)
-		else:
-			log("status", "database initialised")
+		# try:
+		# 	self.POOL = await create_pool(**db_config)
+		# except Exception as e:
+		# 	log("error", f"failed to initialise the database")
+		# 	print_tb(e)
+		# else:
+		# 	log("status", "database initialised")
 
-
-			for cog in listdir(f"{getcwd()}/cogs"):
-				if not cog.endswith(".py"):
-					continue
-
-				try:
-					await self.load_extension(f"cogs.{cog[:-3]}")
-				except Exception as e:
-					log("error", f"failed to load '{cog}'")
-					print_tb(e)
-				else:
-					log("status", f"loaded '{cog}'")
+		# loading cogs
+		for cog in listdir(f"{getcwd()}/cogs"):
+			if not cog.endswith(".py"):
+				continue
 
 			try:
-				await self.tree.sync()
-				await self.tree.sync(guild=Default.SERVER)
+				await self.load_extension(f"cogs.{cog[:-3]}")
 			except Exception as e:
-				log("error", "failed to sync commands")
+				log("error", f"failed to load '{cog}'")
 				print_tb(e)
 			else:
-				log("status", "synced commands")
+				log("status", f"loaded '{cog}'")
 
+		# syncing commands
+		try:
+			await self.tree.sync()
+			await self.tree.sync(guild=Default.SERVER)
+		except Exception as e:
+			log("error", "failed to sync commands")
+			print_tb(e)
+		else:
+			log("status", "synced commands")
+
+		# running background task
 		self.continous_handler.start()
 
 

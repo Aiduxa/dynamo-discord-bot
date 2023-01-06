@@ -1,6 +1,6 @@
 # not 100% working
 
-from discord.ext.commands import GroupCog, Bot
+from discord.ext.commands import Cog, Bot
 from discord.app_commands import command, guilds
 from discord import Interaction, Embed, Member, ButtonStyle, SelectOption
 from discord.ui import View, button, Button, Select
@@ -20,12 +20,6 @@ class BaseView(View):
 		super().__init__(timeout=300.0)
 
 	async def interaction_check(self, inter: Interaction) -> bool:
-		if self.page_index > 0:
-			self.previous.disabled = False
-
-		if self.page_index < len(self.pages):
-			self.next.disabled = False
-
 		return self.author.id == inter.user.id
 
 	
@@ -33,26 +27,34 @@ class BaseView(View):
 	async def previous(self, inter: Interaction, button: Button) -> None:
 		self.page_index -= 1
 
-		if self.page_index == 0:
-			button.disabled = True
+		button.disabled = (self.page_index <= 0)
+		self.next.disabled = not (self.page_index < len(self.pages) - 1)
 
 		for child in self.children:
-			child.options = self.pages_options[self.page_index]
+			if type(child) == Select:
+				try:
+					child.options = self.pages_options[self.page_index]
+				except IndexError:
+					pass
 
-		await inter.response.edit_message(embed=self.pages[self.page_index], view=self, ephemeral=True)
+		await inter.response.edit_message(embed=self.pages[self.page_index], view=self)
 
 	
 	@button(label="Next", style=ButtonStyle.blurple)
 	async def next(self, inter: Interaction, button: Button) -> None:
 		self.page_index += 1
 
-		if self.page_index == len(self.pages):
-			button.disabled = True
+		button.disabled = (self.page_index >= len(self.pages) - 1)
+		self.previous.disabled = not (self.page_index > 0)
 
 		for child in self.children:
-			child.options = self.pages_options[self.page_index]
+			if type(child) == Select:
+				try:
+					child.options = self.pages_options[self.page_index]
+				except IndexError:
+					pass
 
-		await inter.response.edit_message(embed=self.pages[self.page_index], view=self, ephemeral=True)
+		await inter.response.edit_message(embed=self.pages[self.page_index], view=self)
 
 
 
@@ -65,33 +67,39 @@ class BuySelect(Select):
 		await inter.response.send_message(self.values, ephemeral=True)
 
 
-class Buy(GroupCog, name="buy"):
+class Advertise(Cog):
 	def __init__(self, bot: Bot) -> None:
 		self.bot = bot
 
 		super().__init__()
 
 
-	@command(description="Buy members from other servers")
+	@command(description="Advertise in other servers")
 	@guilds(Default.SERVER)
-	async def members(self, inter: Interaction) -> None:
+	async def advertise(self, inter: Interaction) -> None:
 		pages: list[Embed] = []
 		pages_options: list[list[SelectOption]] = []
 
-		current_embed = Embed(title="Buy", color=Default.COLOR)
-		current_embed.set_footer(text=Default.FOOTER)
+		base_embed: dict = {
+			"title": "Advertise",
+			"color": Default.COLOR,
+			"footer": {"text": Default.FOOTER}
+		}
+
+		current_embed = Embed.from_dict(base_embed)
 
 		current_options: list[SelectOption] = []
 		for index, guild in enumerate(self.bot.guilds):
-			if ((index + 1) % 5) == 0:
-				pages.append(current_embed)
-				pages_options.append(current_options)
-
-				current_embed.clear_fields()
-				pages_options.clear()
-
 			current_embed.add_field(name=f"{guild.name} (:zap: `{randint(1,100000)}`)", value=f":gem: **Price:** `{randint(1,10000)}`", inline=False)
 			current_options.append(SelectOption(label=guild.name, value=guild.id))
+
+			if ((index + 1) % 5) == 0:
+				pages.append(current_embed)
+				current_embed = Embed.from_dict(base_embed)
+
+				if (index + 5) <= len(self.bot.guilds):
+					pages_options.append(current_options)
+					current_options.clear()
 
 		if len(current_embed.fields) >= 1:
 			pages.append(current_embed)
@@ -110,4 +118,4 @@ class Buy(GroupCog, name="buy"):
 
 
 async def setup(bot: Bot) -> None:
-	await bot.add_cog(Buy(bot), guilds=[Default.SERVER])
+	await bot.add_cog(Advertise(bot))
