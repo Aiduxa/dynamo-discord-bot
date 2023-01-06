@@ -48,22 +48,22 @@ class Dynamo(Bot):
 
 	async def setup_hook(self) -> None:
 		# initalizing database
-		# db_config = {
-		# 	'dsn': environ.get("postgres_dsn"),
-		# 	'user': environ.get("postgres_user"),
-		# 	'password': environ.get("postgres_password"),
-		# 	'host': environ.get("postgres_host"),
-		# 	'database': environ.get("postgres_db"),
-		# 	'port': environ.get("postgres_port")
-		# }
+		db_config = {
+		 	'dsn': environ.get("postgres_dsn"),
+		 	'user': environ.get("postgres_user"),
+		 	'password': environ.get("postgres_password"),
+		 	'host': environ.get("postgres_host"),
+		 	'database': environ.get("postgres_db"),
+		 	'port': environ.get("postgres_port")
+		}
 
-		# try:
-		# 	self.POOL = await create_pool(**db_config)
-		# except Exception as e:
-		# 	log("error", f"failed to initialise the database")
-		# 	print_tb(e)
-		# else:
-		# 	log("status", "database initialised")
+		try:
+			self.POOL = await create_pool(**db_config)
+		except Exception as e:
+			log("error", f"failed to initialise the database")
+			print_tb(e)
+		else:
+			log("status", "database initialised")
 
 		# loading cogs
 		for cog in listdir(f"{getcwd()}/cogs"):

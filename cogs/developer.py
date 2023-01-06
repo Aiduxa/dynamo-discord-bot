@@ -34,6 +34,20 @@ class Developer(Cog):
 		else:
 			await inter.response.send_message("Reloaded cog(s) :white_check_mark:")
 
+	@command(description="Developer command")
+	@is_owner()
+	async def load(self, inter : Interaction, cog : str) -> None:
+		try:
+			await self.bot.load_extension(f"cogs.{cog[:-3]}")
+			log("status", f"loaded '{cog}'")
+
+		except Exception as e:
+			log("error", f"failed to load '{cog}'")
+			print_tb(e)
+		
+		else:
+			await inter.response.send_message("Loaded cog(s) :white_check_mark:", ephemeral=True)
+
 
 
 

@@ -1,3 +1,4 @@
+from time import time
 from asyncpg.pool import Pool
 
 from traceback import print_tb
@@ -8,6 +9,12 @@ Notes for myself:
 use acquire() when using a singular query execution
 
 """
+
+async def latency(pool: Pool) -> float:
+	async with pool.acquire() as connection:
+		old: float = time()
+		await connection.execute("SELECT now()")
+		return time()-old
 
 async def create_user(pool: Pool, user_id: int, servers_ids: list[int]) -> None:
 	async with pool.acquire() as connection:
