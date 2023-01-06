@@ -1,9 +1,11 @@
 from discord.ext.commands import Cog, Bot, Context, command, ExtensionNotFound, ExtensionAlreadyLoaded, ExtensionNotLoaded
+from discord import File
 
 from os import listdir, getcwd
 import sys
-from io import StringIO
+from io import StringIO, BytesIO
 from traceback import print_stack
+from typing import Optional
 
 from utils import log
 
@@ -22,7 +24,7 @@ class Developer(Cog):
 
 
 	@command(help="Evaluate python code", aliases=['py', 'e'])
-	async def eval(self, ctx: Context, *, code: str):
+	async def eval(self, ctx: Context, mobile_friendly: Optional[bool] = False, *, code: str):
 		old_stdout = sys.stdout
 		redirected_output = sys.stdout = StringIO()
 		
@@ -35,15 +37,25 @@ class Developer(Cog):
 		
 		output = str(redirected_output.getvalue())
 
-		MAX_LENGTH: int = 1984
+		if mobile_friendly:
+			MAX_LENGTH: int = 1984
 
-		for i in range(0, len(output), MAX_LENGTH):
-			output_message: str = f"```bash\n{output[i:i+MAX_LENGTH]}\n```"
-			
+			for i in range(0, len(output), MAX_LENGTH):
+				output_message: str = f"```bash\n{output[i:i+MAX_LENGTH]}\n```"
+				
+				try:
+					await ctx.message.reply(output_message)
+				except Exception:
+					await ctx.send(output_message)
+		
+		else:
+			bytes_message: BytesIO = BytesIO(output.encode())
+			message_file = File(bytes_message, filename="output")
+
 			try:
-				await ctx.message.reply(output_message)
+				await ctx.message.reply(file=message_file)
 			except Exception:
-				await ctx.send(output_message)
+				await ctx.send(file=message_file)
 
 
 	async def format_cog_error(self, error: Exception) -> str:
