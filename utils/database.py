@@ -1,5 +1,6 @@
 from time import time
 from asyncpg.pool import Pool
+from json import dumps, loads
 
 from traceback import print_tb
 
@@ -33,7 +34,19 @@ async def delete_user(pool: Pool, user_id: int) -> None:
 	async with pool.acquire() as connection:
 		await connection.execute("DELETE FROM users WHERE id = $1", user_id)
 
+async def get_adembed(pool: Pool, server_id : int, field : str = None) -> dict:
+	query: str = "SELECT ad_embed FROM servers WHERE id = $1"
+	if field:
+			query: str = f"SELECT ad_embed::json->>'{field}' FROM servers WHERE id = $1"
+	async with pool.acquire() as connection:
+		if field:
+			return dict(await connection.fetchrow(query, server_id))["?column?"]
+		else:
+			return dict(await connection.fetchrow(query, server_id))["ad_embed"]
 
+async def update_adembed(pool: Pool, server_id : int, embed : dict) -> None:
+	async with pool.acquire() as connection:
+		await connection.execute("UPDATE servers SET ad_embed = $2 WHERE id = $1", server_id, dumps(embed))
 
 async def execute(pool: Pool, query: str, *args) -> list | None:
 	async with pool.acquire() as connection:

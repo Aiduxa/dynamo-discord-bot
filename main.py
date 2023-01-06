@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv(f"{getcwd()}/utils/.env")
 
-from utils import Default, log
+from utils import Default, log, database
 
 
 class Dynamo(Bot):
@@ -44,7 +44,6 @@ class Dynamo(Bot):
 
 	async def on_ready(self) -> None:
 		log("status", "running")
-
 
 	async def setup_hook(self) -> None:
 		# initalizing database
