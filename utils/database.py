@@ -34,7 +34,7 @@ async def delete_user(pool: Pool, user_id: int) -> None:
 	async with pool.acquire() as connection:
 		await connection.execute("DELETE FROM users WHERE id = $1", user_id)
 
-async def get_adembed(pool: Pool, server_id : int, field : str = None) -> dict:
+async def get_adembed(pool: Pool, server_id : int, field : str = None) -> dict | str:
 	query: str = "SELECT ad_embed FROM servers WHERE id = $1"
 	if field:
 			query: str = f"SELECT ad_embed::json->>'{field}' FROM servers WHERE id = $1"
