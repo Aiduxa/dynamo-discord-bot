@@ -24,7 +24,7 @@ class Dynamo(Bot):
 				case_sensitive=False,
 				status=Status.online,
 				intents=intents,
-				application_id=environ.get("APP_ID"),
+				application_id=environ.get("app_id"),
 				description="User engagement bot",
 			)
 
@@ -97,4 +97,4 @@ if __name__ == '__main__':
 	intents.members = True
 	intents.messages = True
 
-	Dynamo(intents).run(environ.get("TOKEN"))
+	Dynamo(intents).run(environ.get("token"))
