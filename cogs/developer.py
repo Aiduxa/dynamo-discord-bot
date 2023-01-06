@@ -1,5 +1,6 @@
 from discord.ext.commands import Cog, Bot, Context, command, ExtensionNotFound, ExtensionAlreadyLoaded, ExtensionNotLoaded
-from discord import File, Embed
+from discord import File, Embed, Member, Interaction, ButtonStyle
+from discord.ui import View, button, Button
 
 from os import listdir, getcwd
 from io import StringIO, BytesIO
@@ -7,6 +8,27 @@ from functools import partial
 from traceback import format_exception
 
 from utils import Default, log
+
+
+class shutdownView(View):
+	def __init__(self, author: Member) -> None:
+		self.author = author
+		self.stop_shutdown: bool = False
+
+		super().__init__(timeout=60.0)
+
+	
+	async def interaction_check(self, inter: Interaction) -> bool:
+		return self.author.id == inter.user.id
+
+
+	@button(label="Cancel", style=ButtonStyle.red)
+	async def cancel(self, inter: Interaction, _button: Button) -> None:
+		await inter.response.edit_message(content="Shutdown cancelled.", view=None)
+
+		self.stop_shutdown = True
+		
+		self.stop()
 
 
 class Developer(Cog):
@@ -23,7 +45,7 @@ class Developer(Cog):
 
 
 	@command(help="Evaluate python code", aliases=['py', 'e'])
-	async def eval(self, ctx: Context, mobile_friendly: bool | None = False, *, code: str):
+	async def eval(self, ctx: Context, mobile_friendly: bool = False, *, code: str):
 		output = StringIO()
 
 		injected_print = partial(print, file=output)
@@ -51,6 +73,29 @@ class Developer(Cog):
 			message_file = File(bytes_message, filename="output")
 
 			await ctx.message.reply(file=message_file)
+
+	
+	@command(help="Shutdown the bot", aliases=['s'])
+	async def shutdown(self, ctx: Context, force: bool = False) -> None:
+		if force:
+			await ctx.send(":white_check_mark: Shutting down!")
+
+			await self.bot.close()
+
+			return
+
+		view = shutdownView(ctx.author)
+
+		base_message = await ctx.send(":warning: Shutting down in 60...", view=view)
+
+		await view.wait()
+
+		if not view.stop_shutdown:
+			log("status", f"shutting down by shutdown command. (admin: {ctx.author} [{ctx.author.id}])")
+			
+			await base_message.edit(content=":white_check_mark: Shutting down!", view=None)
+
+			await self.bot.close()
 
 
 	async def format_cog_error(self, error: Exception) -> str:
