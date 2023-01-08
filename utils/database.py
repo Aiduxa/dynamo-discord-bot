@@ -26,7 +26,7 @@ async def update_user(pool: Pool, user_id: int, column: str, value: any) -> None
 	async with pool.acquire() as connection:
 		await connection.execute(f"UPDATE users SET {column} = $1 WHERE id = $2", value, user_id)
 
-async def get_user(pool : Pool, user_id : int) -> list:
+async def get_user(pool: Pool, user_id: int) -> list:
 	async with pool.acquire() as connection:
 		return await connection.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
 
@@ -34,7 +34,7 @@ async def delete_user(pool: Pool, user_id: int) -> None:
 	async with pool.acquire() as connection:
 		await connection.execute("DELETE FROM users WHERE id = $1", user_id)
 
-async def get_adembed(pool: Pool, server_id : int, field : str = None) -> dict | str:
+async def get_adembed(pool: Pool, server_id: int, field: str = None) -> dict | str:
 	query: str = "SELECT ad_embed FROM servers WHERE id = $1"
 	if field:
 			query: str = f"SELECT ad_embed::json->>'{field}' FROM servers WHERE id = $1"
@@ -44,9 +44,17 @@ async def get_adembed(pool: Pool, server_id : int, field : str = None) -> dict |
 		else:
 			return dict(await connection.fetchrow(query, server_id))["ad_embed"]
 
-async def update_adembed(pool: Pool, server_id : int, embed : dict) -> None:
+async def update_adembed(pool: Pool, server_id: int, embed: dict) -> None:
 	async with pool.acquire() as connection:
 		await connection.execute("UPDATE servers SET ad_embed = $2 WHERE id = $1", server_id, dumps(embed))
+
+async def get_custom_invite_url(pool: Pool, server_id: int) -> str:
+	async with pool.acquire() as connection:
+		return await connection.fetchrow("SELECT custom_invite_url FROM servers WHERE id = $1", server_id)
+
+async def update_custom_invite_url(pool: Pool, server_id: int, url: str) -> None:
+	async with pool.acquire() as connection:
+		await connection.execute("UPDATE servers SET custom_invite_url = $2 WHERE id = $1", server_id, url)
 
 async def execute(pool: Pool, query: str, *args) -> list | None:
 	async with pool.acquire() as connection:
