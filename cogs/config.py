@@ -1,9 +1,9 @@
-from discord.ext.commands import GroupCog, Bot
+from discord.ext.commands import GroupCog, Bot, Context
 from discord.app_commands import command, guilds
-from discord import Interaction, Embed, Member, ButtonStyle, Attachment
+from discord import Interaction, Embed, Member, ButtonStyle, Attachment, Permissions
 from discord.ui import View, button, Button
 
-from utils import Default
+from utils import Default, log
 
 
 class BaseView(View):
@@ -33,9 +33,15 @@ class Config(GroupCog, name="config"):
 		super().__init__()
 
 
+	async def interaction_check(self, inter: Interaction) -> bool:
+		perms: Permissions = inter.user.guild_permissions
+
+		return perms.administrator or perms.manage_guild or (inter.user.id == inter.guild.owner_id)
+
+
 	@command(description="Configure your guild's advertisement")
 	@guilds(Default.SERVER)
-	async def ad(self, inter: Interaction, title: str = "CLICK HRE TO JOIN!", description: str = "", color: str = "000000", display_owner: bool = False, display_logo: bool = False, banner: Attachment | None = None) -> None:
+	async def ad(self, inter: Interaction, title: str = "CLICK HERE TO JOIN!", description: str = "", color: str = "000000", display_owner: bool = False, display_logo: bool = False, banner: Attachment | None = None) -> None:
 		error_message: str = ""
 		
 		try:
@@ -86,6 +92,17 @@ class Config(GroupCog, name="config"):
 		await inter.response.send_message(embed=embed, view=view, ephemeral=True)
 
 		await view.wait()
+
+
+	@command(description="Configure your guild's invite link")
+	@guilds(Default.SERVER)
+	async def invite(self, inter: Interaction, invite: str) -> None:
+		if not invite.startswith("https://discord.gg/"):
+			await inter.response.send_message("Invalid invitation link!", ephemeral=True)
+
+			return
+
+		await inter.response.send_message(":white_check_mark: Saved new invitation link.", ephemeral=True)
 
 
 async def setup(bot: Bot) -> None:
