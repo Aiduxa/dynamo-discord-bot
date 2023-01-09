@@ -2,14 +2,16 @@ from discord.ext.commands import GroupCog, Bot, Context
 from discord.app_commands import command, guilds
 from discord import Interaction, Embed, Member, ButtonStyle, Attachment, Permissions
 from discord.ui import View, button, Button
+from asyncpg.pool import Pool
 
-from utils import Default, log
+from utils import Default, log, database
 
 
 class BaseView(View):
-	def __init__(self, author: Member, ad_embed: dict) -> None:
+	def __init__(self, author: Member, ad_embed: dict, pool: Pool) -> None:
 		self.author = author
 		self.ad_embed = ad_embed
+		self.POOL = pool
 
 		super().__init__(timeout=150)
 
@@ -20,6 +22,15 @@ class BaseView(View):
 	@button(label="Save", style=ButtonStyle.green)
 	async def save(self, inter: Interaction, _button: Button) -> None:
 		final_embed = Embed.from_dict(self.ad_embed)
+
+		if self.ad_embed.get("author"):
+			self.ad_embed["author"] = "true"
+		if self.ad_embed.get("thumbnail"):
+			self.ad_embed["thumbnail"] = "true"
+		if self.ad_embed.get("banner"):
+			self.ad_embed["banner"] = self.ad_embed["banner"]["url"]
+
+		await database.update_adembed(self.POOL, inter.guild_id, self.ad_embed)
 
 		await inter.response.edit_message(content=":white_check_mark: Changes saved!", embed=final_embed, view=None)
 
@@ -41,7 +52,7 @@ class Config(GroupCog, name="config"):
 
 	@command(description="Configure your guild's advertisement")
 	@guilds(Default.SERVER)
-	async def ad(self, inter: Interaction, title: str = "CLICK HERE TO JOIN!", description: str = "", color: str = "000000", display_owner: bool = False, display_logo: bool = False, banner: Attachment | None = None) -> None:
+	async def ad(self, inter: Interaction, title: str = "CLICK HERE TO JOIN!", description: str = None, color: str = "000000", display_owner: bool = False, display_logo: bool = False, banner: Attachment | None = None) -> None:
 		error_message: str = ""
 		
 		try:
@@ -49,10 +60,10 @@ class Config(GroupCog, name="config"):
 		except Exception:
 			error_message += "Invalid `color` value, please provide a valid `hex code`.\n"
 
-		if len(title) > 256:
+		if title and len(title) > 256:
 			error_message += "`title` can't be longer than `256` characters!\n"
 
-		if len(description) > 4096:
+		if description and len(description) > 4096:
 			error_message = "`description` can't be longer than `4096` characters!\n"
 
 		if error_message != "":
@@ -87,7 +98,7 @@ class Config(GroupCog, name="config"):
 		
 		embed = Embed.from_dict(base_embed)
 
-		view = BaseView(inter.user, base_embed)
+		view = BaseView(inter.user, base_embed, self.bot.POOL)
 
 		await inter.response.send_message(embed=embed, view=view, ephemeral=True)
 
@@ -101,6 +112,8 @@ class Config(GroupCog, name="config"):
 			await inter.response.send_message("Invalid invitation link!", ephemeral=True)
 
 			return
+
+		await database.update_guild_invite_url(self.bot.POOL, inter.guild_id, invite)
 
 		await inter.response.send_message(":white_check_mark: Saved new invitation link.", ephemeral=True)
 
