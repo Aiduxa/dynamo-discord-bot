@@ -2,6 +2,7 @@ from discord.ext.commands import GroupCog, Bot, Context
 from discord.app_commands import command, guilds
 from discord import Interaction, Embed, Member, ButtonStyle, Attachment, Permissions
 from discord.ui import View, button, Button
+from asyncpg.pool import Pool
 
 from utils import Default, log, update_adembed, get_adembed, update_custom_invite_url
 
@@ -12,6 +13,7 @@ class BaseView(View):
 		self.guild_id = guild_id
 		self.bot = bot
 		self.ad_embed = ad_embed
+		self.POOL = pool
 
 		super().__init__(timeout=150)
 
@@ -74,10 +76,10 @@ class Config(GroupCog, name="config"):
 		except Exception:
 			error_message += "Invalid `color` value, please provide a valid `hex code`.\n"
 
-		if len(title) > 256:
+		if title and len(title) > 256:
 			error_message += "`title` can't be longer than `256` characters!\n"
 
-		if len(description) > 4096:
+		if description and len(description) > 4096:
 			error_message = "`description` can't be longer than `4096` characters!\n"
 
 		if error_message != "":
