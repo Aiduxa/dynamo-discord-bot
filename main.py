@@ -77,6 +77,15 @@ class Dynamo(Bot):
 			else:
 				log("status", f"loaded '{cog}'")
 
+		# add jishaku developer commands (https://github.com/Gorialis/jishaku)
+		try:
+			await self.load_extension('jishaku')
+		except Exception as e:
+			log("error", "'jishaku' failed to load")
+			print_tb(e)
+		else:
+			log("status", "loaded 'jishaku'")
+
 		# syncing commands
 		try:
 			await self.tree.sync()

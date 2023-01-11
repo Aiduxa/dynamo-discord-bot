@@ -50,13 +50,13 @@ async def update_adembed(pool: Pool, server_id: int, embed: dict) -> None:
 	async with pool.acquire() as connection:
 		await connection.execute("UPDATE servers SET ad_embed = $2 WHERE id = $1", server_id, dumps(embed))
 
-async def get_guild_invite_url(pool: Pool, server_id: int) -> str:
+async def get_custom_invite_url(pool: Pool, server_id: int) -> str:
 	async with pool.acquire() as connection:
-		return await connection.fetchrow("SELECT guild_invite_url FROM servers WHERE id = $1", server_id)
+		return await connection.fetchrow("SELECT custom_invite_url FROM servers WHERE id = $1", server_id)
 
-async def update_guild_invite_url(pool: Pool, server_id: int, url: str) -> None:
+async def update_custom_invite_url(pool: Pool, server_id: int, url: str) -> None:
 	async with pool.acquire() as connection:
-		await connection.execute("UPDATE servers SET guild_invite_url = $2 WHERE id = $1", server_id, url)
+		await connection.execute("UPDATE servers SET custom_invite_url = $2 WHERE id = $1", server_id, url)
 
 async def execute(pool: Pool, query: str, *args) -> list | None:
 	async with pool.acquire() as connection:
