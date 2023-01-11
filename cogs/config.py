@@ -3,12 +3,14 @@ from discord.app_commands import command, guilds
 from discord import Interaction, Embed, Member, ButtonStyle, Attachment, Permissions
 from discord.ui import View, button, Button
 
-from utils import Default, log
+from utils import Default, log, update_adembed, get_adembed, update_custom_invite_url
 
 
 class BaseView(View):
-	def __init__(self, author: Member, ad_embed: dict) -> None:
+	def __init__(self, author: Member, guild_id: int, bot: Bot, ad_embed: dict) -> None:
 		self.author = author
+		self.guild_id = guild_id
+		self.bot = bot
 		self.ad_embed = ad_embed
 
 		super().__init__(timeout=150)
@@ -21,7 +23,16 @@ class BaseView(View):
 	async def save(self, inter: Interaction, _button: Button) -> None:
 		final_embed = Embed.from_dict(self.ad_embed)
 
-		await inter.response.edit_message(content=":white_check_mark: Changes saved!", embed=final_embed, view=None)
+		message: str = ":white_check_mark: Changes saved!"
+
+		try:
+			await update_adembed(self.bot.POOL, self.guild_id, self.ad_embed)
+		except Exception as e:
+			log("error", str(e))
+
+			message = ":warning: Something wen't wrong!"
+
+		await inter.response.edit_message(content=message, embed=final_embed, view=None)
 
 		self.stop()
 
@@ -41,7 +52,21 @@ class Config(GroupCog, name="config"):
 
 	@command(description="Configure your guild's advertisement")
 	@guilds(Default.SERVER)
-	async def ad(self, inter: Interaction, title: str = "CLICK HERE TO JOIN!", description: str = "", color: str = "000000", display_owner: bool = False, display_logo: bool = False, banner: Attachment | None = None) -> None:
+	async def ad(self, inter: Interaction, title: str = Default.AD_EMBED_TITLE, description: str = "", color: str = "000000", display_owner: bool = False, display_logo: bool = False, banner: Attachment | None = None) -> None:
+		if (title == Default.AD_EMBED_TITLE) and (description == "") and (color == "000000") and (display_owner == False) and (display_logo == False) and (banner == None):
+			try:
+				ad_embed_data: dict = await get_adembed(self.bot.POOL, int(inter.guild.id))
+			except Exception as e:
+				log("error", str(e))
+
+				await inter.response.send_message("Your server doesn't have an advertisement yet, try creating one.", ephemeral=True)
+			else:
+				ad_embed = Embed.from_dict(ad_embed_data)
+
+				await inter.response.send_message(embed=ad_embed, ephemeral=True)
+
+			return
+
 		error_message: str = ""
 		
 		try:
@@ -64,8 +89,7 @@ class Config(GroupCog, name="config"):
 			"title": title,
 			"description": description,
 			"color": int(color.replace('#', ''), 16),
-			"footer": {"text": Default.FOOTER},
-			"url": "https://google.com"
+			"footer": {"text": Default.FOOTER}
 		}
 
 		if display_owner:
@@ -87,7 +111,7 @@ class Config(GroupCog, name="config"):
 		
 		embed = Embed.from_dict(base_embed)
 
-		view = BaseView(inter.user, base_embed)
+		view = BaseView(inter.user, int(inter.guild.id), self.bot, base_embed)
 
 		await inter.response.send_message(embed=embed, view=view, ephemeral=True)
 
@@ -100,9 +124,17 @@ class Config(GroupCog, name="config"):
 		if not invite.startswith("https://discord.gg/"):
 			await inter.response.send_message("Invalid invitation link!", ephemeral=True)
 
-			return
+		else:
+			message: str = ":white_check_mark: Saved new invitation link."
 
-		await inter.response.send_message(":white_check_mark: Saved new invitation link.", ephemeral=True)
+			try:
+				await update_custom_invite_url(self.bot.POOL, int(inter.guild.id), invite)
+			except Exception as e:
+				log("error", str(e))
+
+				message = ":warning: Something wen't wrong!"
+
+			await inter.response.send_message(message, ephemeral=True)
 
 
 async def setup(bot: Bot) -> None:

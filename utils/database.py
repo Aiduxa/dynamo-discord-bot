@@ -36,13 +36,15 @@ async def delete_user(pool: Pool, user_id: int) -> None:
 
 async def get_adembed(pool: Pool, server_id: int, field: str = None) -> dict | str:
 	query: str = "SELECT ad_embed FROM servers WHERE id = $1"
+
 	if field:
-			query: str = f"SELECT ad_embed::json->>'{field}' FROM servers WHERE id = $1"
+			query = f"SELECT ad_embed::json->>'{field}' FROM servers WHERE id = $1"
+	
 	async with pool.acquire() as connection:
 		if field:
 			return dict(await connection.fetchrow(query, server_id))["?column?"]
 		else:
-			return dict(await connection.fetchrow(query, server_id))["ad_embed"]
+			return loads(dict(await connection.fetchrow(query, server_id))["ad_embed"])
 
 async def update_adembed(pool: Pool, server_id: int, embed: dict) -> None:
 	async with pool.acquire() as connection:

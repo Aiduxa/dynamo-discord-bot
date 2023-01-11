@@ -32,6 +32,7 @@ class Default:
 	FOOTER: str = "Dynamo © 2023"
 	MULTIPLIER: float = 10.0
 	PREFIX: str = "dyn."
+	AD_EMBED_TITLE: str = "CLICK HERE TO JOIN!"
 
 @dataclass
 class ActivityRank:
