@@ -39,3 +39,9 @@ class ActivityRank:
 	SUPERACTIVE: int = 3.0
 	ACTIVE: int = 1.5
 	ONLINE: int = 1
+
+@dataclass
+class Emoji:
+	SUPERACTIVE: ste = "<:super_active:1062614609028198410>"
+	ACTIVE: str = "<:active:1062614628909187143>"
+	ONLINE: str = "<:online:1062614646038732851>"
