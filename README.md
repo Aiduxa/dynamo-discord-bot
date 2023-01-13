@@ -1,2 +1,4 @@
 # dynamo-discord-bot
-Dynamo is a open-source discord bot
+Dynamo is a open-source advertisement discord bot
+
+========
