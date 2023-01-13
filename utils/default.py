@@ -1,4 +1,4 @@
-__all__ = ['log', 'Color', 'Default', 'ActivityRank']
+__all__ = ['log', 'Color', 'Default', 'ActivityRank', 'Emoji']
 
 
 from datetime import datetime
