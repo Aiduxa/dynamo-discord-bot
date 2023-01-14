@@ -14,7 +14,7 @@ Dynamo is a powerful and innovative discord bot that is focused on providing an 
 
 To get started with Dynamo, you will need to:
 
-1. Invite the bot to your discord server by using this link: [insert link here]
+1. Invite the bot to your discord server by using this [link](https://discord.com/api/oauth2/authorize?client_id=1060253596672860160&permissions=140123622481&scope=applications.commands%20bot)
 2. Ensure that you have the necessary permissions to use the bot on your server
 3. Use the `/help` command to view a list of available commands and their usage
 
@@ -28,7 +28,7 @@ Dynamo is an open-source project and we welcome contributions from the community
 
 ## Support
 
-If you need any help or support with using Dynamo, please join our Discord server https://discord.gg/F4xR8H64kT where you can ask questions and get help from the community and the developers.
+If you need any help or support with using Dynamo, please join our [Discord server](https://discord.gg/F4xR8H64kT) where you can ask questions and get help from the community and the developers.
 
 ## Disclaimer
 
