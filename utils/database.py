@@ -1,4 +1,4 @@
-__all__ = ['latency', 'fetch_guild', 'fetch_user', 'update_user', 'user_add_server', 'get_guild_adembed', 'update_guild_adembed', 'update_guild_invite_url', 'update_guild_adchannel', 'create_guild']
+__all__ = ['get_db_latency', 'fetch_guild', 'fetch_user', 'update_user', 'user_add_server', 'get_guild_adembed', 'update_guild_adembed', 'update_guild_invite_url', 'update_guild_adchannel', 'create_guild']
 
 from asyncpg.pool import Pool
 from time import time
@@ -8,7 +8,7 @@ from .default import Default
 from json import loads, dumps
 
 
-async def latency(pool: Pool) -> float:
+async def get_db_latency(pool: Pool) -> float:
 	old: float = time()
 
 	async with pool.acquire() as conn:
