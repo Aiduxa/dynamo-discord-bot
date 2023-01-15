@@ -1,8 +1,8 @@
 from os import environ, getcwd, listdir
 from traceback import print_tb
 
-from discord import Activity, ActivityType, Status, Intents
-from discord.ext.commands import Bot, when_mentioned_or, DefaultHelpCommand
+from discord import Activity, ActivityType, Status, Intents, Interaction, Guild, utils, TextChannel
+from discord.ext.commands import Bot, when_mentioned_or
 from discord.ext.tasks import loop
 
 from asyncpg.pool import Pool
@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv(f"{getcwd()}/utils/.env")
 
-from utils import Default, log, database
+from utils import Default, log, fetch_guild, DBGuildNotFound
 
 
 class Dynamo(Bot):
@@ -105,6 +105,30 @@ intents.members = True
 intents.messages = True
 
 bot = Dynamo(intents)
+
+
+async def app_commands_interaction_check(inter: Interaction) -> bool:
+	if inter.command.name == "channel":
+		return True
+
+	guild: Guild = inter.guild
+
+	ad_channel_exists: bool = False
+
+	try:
+		guild_data: dict = await fetch_guild(bot.POOL, guild.id)
+	except DBGuildNotFound:
+		pass
+	else:
+		if guild_data["ad_channel"] != "":
+			ad_channel_exists = True
+
+	if ad_channel_exists == False:
+		await inter.response.send_message("Advertisement channel is missng! Run `/config channel` to setup.", ephemeral=True)
+			
+	return ad_channel_exists
+
+bot.tree.interaction_check = app_commands_interaction_check
 
 
 if __name__ == '__main__':

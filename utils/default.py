@@ -14,7 +14,7 @@ def log(title: str, message: str, error: bool = False):
 	print(f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}] [{title.upper()}{margin}]: {message}")
 
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from discord import Object as D_Object
 
@@ -33,6 +33,10 @@ class Default:
 	MULTIPLIER: float = 10.0
 	PREFIX: str = "dyn."
 	AD_EMBED_TITLE: str = "CLICK HERE TO JOIN!"
+	USER_COLUMNS: list[str] = field(default_factory=["last_message", "last_day_messages", "activity_rank", "servers"])
+	GUILD_COLUMNS: list[str] = field(default_factory=["activity_power"])
+	DATETIME_FORMAT: str = "..."
+	CHANNEL: str = "Dynamo's advertisements"
 
 @dataclass
 class ActivityRank:

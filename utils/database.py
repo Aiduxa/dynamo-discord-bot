@@ -1,40 +1,101 @@
-from time import time
+__all__ = ['latency', 'fetch_guild', 'fetch_user', 'update_user', 'user_add_server', 'get_guild_adembed', 'update_guild_adembed', 'update_guild_invite_url', 'update_guild_adchannel', 'create_guild']
+
 from asyncpg.pool import Pool
-from json import dumps, loads
+from time import time
 
-from traceback import print_tb
+from .errors import DBGuildNotFound, DBUserNotFound, DBInvalidColumn, DBDataAlreadyExists
+from .default import Default
+from json import loads, dumps
 
-"""
-Notes for myself:
-
-use acquire() when using a singular query execution
-
-"""
 
 async def latency(pool: Pool) -> float:
-	async with pool.acquire() as connection:
-		old: float = time()
-		await connection.execute("SELECT now()")
-		return time()-old
+	old: float = time()
 
-async def create_user(pool: Pool, user_id: int, servers_ids: list[int]) -> None:
-	async with pool.acquire() as connection:
-		await connection.execute("INSERT INTO users(id, servers) VALUES ($1, $2,)", user_id, servers_ids)
+	async with pool.acquire() as conn:
+		await conn.execute("SELECT now()")
+
+	return time() - old
 
 
-async def update_user(pool: Pool, user_id: int, column: str, value: any) -> None:
-	async with pool.acquire() as connection:
-		await connection.execute(f"UPDATE users SET {column} = $1 WHERE id = $2", value, user_id)
+async def fetch_guild(pool: Pool, guild_id: str | int) -> dict:
+	guild_id = int(guild_id)
 
-async def get_user(pool: Pool, user_id: int) -> list:
-	async with pool.acquire() as connection:
-		return await connection.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
+	async with pool.acquire() as conn:
+		try:
+			data = dict(await conn.fetchrow("SELECT * FROM servers WHERE id = $1", guild_id))
+		except:
+			raise DBGuildNotFound
 
-async def delete_user(pool: Pool, user_id: int) -> None:
-	async with pool.acquire() as connection:
-		await connection.execute("DELETE FROM users WHERE id = $1", user_id)
+	return data
 
-async def get_adembed(pool: Pool, server_id: int, field: str = None) -> dict | str:
+
+async def create_guild(pool: Pool, guild_id: str | int, **kwargs) -> None:
+	guild_id = int(guild_id)
+
+	async with pool.acquire() as conn:
+		await conn.execute(f"UPDATE servers SET id = $1", guild_id)
+
+
+async def update_guild_adchannel(pool: Pool, guild_id: str | int, channel_id: str | int) -> None:
+	async with pool.acquire() as conn:
+		await conn.execute(f"UPDATE servers SET ad_channel = $1 WHERE id = $2", str(channel_id), int(guild_id))
+
+
+async def fetch_user(pool: Pool, user_id: str | int) -> dict:
+	user_id = int(user_id)
+
+	async with pool.acquire() as conn:
+		try:
+			data = dict(await conn.fetchrow("SELECT * FROM users WHERE id = $1", user_id))
+		except:
+			raise DBUserNotFound
+
+	return data
+
+
+async def update_user(pool: Pool, user_id: str | int, **kwargs) -> None:
+	user_id = int(user_id)
+	
+	user_data: dict = {}
+	
+	if "user_data" in list(kwargs.keys()):
+		user_data = kwargs["user_data"]
+	else:
+		user_data = await fetch_user(pool, user_id)
+
+	async with pool.acquire() as conn:
+		for column, value in kwargs.items():
+			if column == "user_data": continue
+
+			if column not in Default.USER_COLUMNS:
+				raise DBInvalidColumn(column)
+
+			await conn.execute(f"UPDATE users SET {column} = $1 WHERE id = $2", value, user_id)
+
+
+async def user_add_server(pool, user_id: str | int, server_id: str | int, **kwargs) -> None:
+	user_id = int(user_id)
+	server_id = str(server_id)
+
+	user_data: dict = {}
+
+	if "user_data" in list(kwargs.keys()):
+		user_data = kwargs["user_data"]
+
+	else:
+		user_data = await fetch_user(pool, user_id)
+
+	if server_id in user_data["servers"]:
+		raise DBDataAlreadyExists(f"server '{server_id}' already exists in user '{user_id}' servers")
+
+	else:
+		new_servers: list = user_data["servers"]
+		new_servers.append(server_id)
+
+		await update_user(pool, user_id, servers=new_servers)
+
+
+async def get_guild_adembed(pool: Pool, server_id: int, field: str = None) -> dict | str:
 	query: str = "SELECT ad_embed FROM servers WHERE id = $1"
 
 	if field:
@@ -46,28 +107,12 @@ async def get_adembed(pool: Pool, server_id: int, field: str = None) -> dict | s
 		else:
 			return loads(dict(await connection.fetchrow(query, server_id))["ad_embed"])
 
-async def update_adembed(pool: Pool, server_id: int, embed: dict) -> None:
+
+async def update_guild_adembed(pool: Pool, server_id: int, embed: dict) -> None:
 	async with pool.acquire() as connection:
 		await connection.execute("UPDATE servers SET ad_embed = $2 WHERE id = $1", server_id, dumps(embed))
 
-async def get_custom_invite_url(pool: Pool, server_id: int) -> str:
+
+async def update_guild_invite_url(pool: Pool, server_id: int, url: str) -> None:
 	async with pool.acquire() as connection:
-		return await connection.fetchrow("SELECT custom_invite_url FROM servers WHERE id = $1", server_id)
-
-async def update_custom_invite_url(pool: Pool, server_id: int, url: str) -> None:
-	async with pool.acquire() as connection:
-		await connection.execute("UPDATE servers SET custom_invite_url = $2 WHERE id = $1", server_id, url)
-
-async def execute(pool: Pool, query: str, *args) -> list | None:
-	async with pool.acquire() as connection:
-		result: list = None
-		try:
-			if args:
-				result: list = [connection.fetch(query, *args)]
-			else:
-				await connection.execute(query)
-		except Exception as e: print_tb(e)
-		else: return result
-			
-
-
+		await connection.execute("UPDATE servers SET guild_invite_url = $2 WHERE id = $1", server_id, url)
