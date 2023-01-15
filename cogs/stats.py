@@ -8,7 +8,7 @@ from sys import version
 
 from random import randint
 
-from utils import Default, database
+from utils import Default, Emoji
 
 
 class Stats(GroupCog, name="stats"):
