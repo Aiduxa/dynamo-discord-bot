@@ -32,6 +32,6 @@ If you need any help or support with using Dynamo, please join our [Discord serv
 
 ## Disclaimer
 
-Please note that Dynamo is currently in beta and may contain bugs or issues. Use at your own risk.
+Please note that Dynamo is currently in beta and may contain bugs or issues.
 
 Thank you for using Dynamo!
