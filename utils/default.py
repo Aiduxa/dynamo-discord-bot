@@ -35,7 +35,7 @@ class Default:
 	AD_EMBED_TITLE: str = "CLICK HERE TO JOIN!"
 	USER_COLUMNS: list[str] = field(default_factory=["last_message", "last_day_messages", "activity_rank", "servers"])
 	GUILD_COLUMNS: list[str] = field(default_factory=["activity_power"])
-	DATETIME_FORMAT: str = "..."
+	FORMAT: str = "%Y-%m-%d %H:%M:%S"
 	CHANNEL: str = "Dynamo's advertisements"
 
 @dataclass
