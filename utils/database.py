@@ -1,4 +1,4 @@
-__all__ = ['get_db_latency', 'fetch_guild', 'fetch_user', 'get_guild_adembed', 'update_guild_adembed', 'update_guild_invite_url', 'update_guild_adchannel', 'create_guild', 'create_user', 'update_user_activity_ranks', 'update_user_server_messages', 'update_user_server_last_message']
+__all__ = ['get_db_latency', 'fetch_guild', 'fetch_user', 'get_guild_adembed', 'update_guild_adembed', 'update_guild_invite_url', 'update_guild_adchannel', 'create_guild', 'create_user', 'update_user_activity_ranks', 'update_user_server_messages', 'update_user_server_last_message', 'update_guild_nsfw', 'update_user_gems', 'update_guild_users', 'update_guild_activity_power']
 
 from asyncpg.pool import Pool
 from time import time
@@ -31,14 +31,56 @@ async def fetch_guild(pool: Pool, guild_id: str | int) -> dict:
 		except:
 			raise DBGuildNotFound
 
+	data['guild_users'] = list(loads(data['guild_users']))
+
 	return data
 
 
-async def create_guild(pool: Pool, guild_id: str | int, **kwargs) -> None:
+async def create_guild(pool: Pool, guild_id: str | int) -> None:
 	guild_id = int(guild_id)
 
 	async with pool.acquire() as conn:
 		await conn.execute(f"UPDATE servers SET id = $1", guild_id)
+
+	return await fetch_guild(pool, guild_id)
+
+
+async def update_guild_activity_power(pool: Pool, guild_id: str | int, activity_power: int) -> None:
+	async with pool.acquire() as conn:
+		await conn.execute(f"UPDATE servers SET activity_power = $1 WHERE id = $2", activity_power, int(guild_id))
+
+
+async def update_guild_users(pool: Pool, guild_id: str | int, user_id: str | int, activity_rank, guild_data: dict = None) -> int:
+	guild_id = int(guild_id)
+	user_id = str(user_id)
+
+	if guild_data == None:
+		try:
+			guild_data = await fetch_guild(pool, guild_id)
+		except DBGuildNotFound:
+			guild_data = await create_guild(pool, guild_id)
+
+	guild_users = guild_data['guild_users']
+
+	old_activity: int = 0
+
+	for activity, users in enumerate(guild_users):
+		if user_id in users:
+			guild_users[activity].remove(user_id)
+
+			old_activity = activity
+
+	guild_users[activity_rank].append(user_id)
+
+	async with pool.acquire() as conn:
+		await conn.execute(f"UPDATE servers SET guild_users = $1 WHERE id = $2", dumps(guild_users), guild_id)
+
+	return old_activity, guild_data
+
+
+async def update_guild_nsfw(pool: Pool, guild_id: str | int, is_nsfw: bool) -> None:
+	async with pool.acquire() as conn:
+		await conn.execute(f"UPDATE servers SET is_nsfw = $1 WHERE id = $2", is_nsfw, int(guild_id))
 
 
 async def update_guild_adchannel(pool: Pool, guild_id: str | int, channel_id: str | int) -> None:
@@ -83,7 +125,7 @@ async def fetch_user(pool: Pool, user_id: str | int) -> dict:
 				value = json_to_dict(value)
 			except:
 				value = {}
-
+			
 			data[key] = value
 
 	return data
@@ -96,6 +138,13 @@ async def create_user(pool: Pool, user_id: str | int) -> dict:
 		await conn.execute("INSERT INTO users (id) VALUES ($1)", user_id)
 
 	return await fetch_user(pool, user_id)
+
+
+async def update_user_gems(pool: Pool, user_id: str | int, gems: int) -> None:
+	user_id = int(user_id)
+
+	async with pool.acquire() as conn:
+		await conn.execute("UPDATE users SET gems = $1 WHERE id = $2", gems, user_id)
 
 
 async def update_user_activity_ranks(pool: Pool, user_id: str | int, server_id: str | int, new_server_activity_rank: int, user_data: dict = None) -> None:

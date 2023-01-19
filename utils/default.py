@@ -30,7 +30,7 @@ class Default:
 	SERVER: D_Object = D_Object(id=1060218266670346370)
 	COLOR: int = Color.NEON
 	FOOTER: str = "Dynamo © 2023"
-	MULTIPLIER: float = 10.0
+	MULTIPLIER: int = 10.0
 	PREFIX: str = "dyn."
 	AD_EMBED_TITLE: str = "CLICK HERE TO JOIN!"
 	USER_COLUMNS: list[str] = field(default_factory=["last_message", "last_day_messages", "activity_rank", "servers"])

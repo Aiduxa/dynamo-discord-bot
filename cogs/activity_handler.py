@@ -3,7 +3,7 @@ from discord.ext.tasks import loop
 from discord import Message, TextChannel
 from datetime import datetime, timedelta
 
-from utils import fetch_user, DBUserNotFound, Default, update_user_server_last_message, update_user_server_messages, update_user_activity_ranks, create_user, log
+from utils import fetch_user, DBUserNotFound, Default, update_user_server_last_message, update_user_server_messages, update_user_activity_ranks, create_user, update_guild_users, update_guild_activity_power, fetch_guild, log
 
 
 class ActivityHandler(Cog):
@@ -46,6 +46,18 @@ class ActivityHandler(Cog):
 			for server_id in list(user_data["activity_ranks"].keys()):
 				if server_id in list(new_activity_ranks.keys()):
 					await update_user_activity_ranks(self.bot.POOL, user.id, server_id, new_activity_ranks[server_id], user_data)
+
+					guild_data: dict = await fetch_guild(self.bot.POOL, server_id)
+
+					old_activity, guild_data = await update_guild_users(self.bot.POOL, server_id, user.id, new_activity_ranks[server_id], guild_data)
+
+					activity_power = guild_data['activity_power']
+
+					if old_activity != new_activity_ranks[server_id]:
+						activity_power -= (old_activity + 1) * Default.MULTIPLIER
+						activity_power += (new_activity_ranks[server_id] + 1) * Default.MULTIPLIER
+
+					await update_guild_activity_power(self.bot.POOL, server_id, activity_power)
 
 					log("debug", "updated server activity rank")
 
@@ -92,16 +104,15 @@ class ActivityHandler(Cog):
 
 			return
 
-		if (datetime.utcnow() + timedelta(minutes=1)) < datetime.strptime(servers_last_message[str(message.guild.id)], Default.FORMAT):
+		if (datetime.strptime(servers_last_message[str(message.guild.id)], Default.FORMAT) + timedelta(minutes=1)) > datetime.utcnow():
 			log("debug", "confirmed user is still on cooldown")
 
-			return
+		else:
+			await update_user_server_last_message(self.bot.POOL, message.author.id, message.guild.id, datetime.utcnow(), user_data)
 
-		await update_user_server_last_message(self.bot.POOL, message.author.id, message.guild.id, datetime.utcnow(), user_data)
+			server_messages = user_data["servers_messages"][str(message.guild.id)]
 
-		server_messages = user_data["servers_messages"][str(message.guild.id)]
-
-		await update_user_server_messages(self.bot.POOL, message.author.id, message.guild.id, server_messages + 1, user_data)
+			await update_user_server_messages(self.bot.POOL, message.author.id, message.guild.id, server_messages + 1, user_data)
 
 		log("debug", "finished on_message activity handler")
 
