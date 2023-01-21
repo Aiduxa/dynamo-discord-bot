@@ -20,7 +20,7 @@ jobs:
         PASSWORD: ${{ secrets.PASSWORD }}
       with:
         source: "."
-        target: "var/discord-bot"
+        target: "~"
 
     - name: Executing remote command
       uses: appleboy/ssh-action@master
