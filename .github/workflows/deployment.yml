@@ -4,7 +4,8 @@ on: [push]
 
 jobs:
   build:
-
+  
+    environment: SECRETS
     runs-on: ubuntu-latest
 
     steps:
