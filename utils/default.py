@@ -49,3 +49,4 @@ class Emoji:
 	SUPER_ACTIVE: str = "<:super_active:1062614609028198410>"
 	ACTIVE: str = "<:active:1062614628909187143>"
 	ONLINE: str = "<:online:1062614646038732851>"
+	CURRENCY: str = ":gem:"

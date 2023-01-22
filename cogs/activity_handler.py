@@ -69,13 +69,13 @@ class ActivityHandler(Cog):
 	async def handler(self, message: Message) -> None:
 		log("debug", "started on_message activity handler")
 
-		if type(message.channel) != TextChannel:
-			log("debug", "channel wasn't a text channel")
+		if message.author.bot:
+			log("debug", "user was not human")
 
 			return
 
-		if message.author.bot:
-			log("debug", "user was not human")
+		if type(message.channel) != TextChannel:
+			log("debug", "channel wasn't a text channel")
 
 			return
 

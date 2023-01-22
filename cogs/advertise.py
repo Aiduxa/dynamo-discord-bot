@@ -3,7 +3,7 @@ from discord.app_commands import command, guilds
 from discord import Interaction, Embed, Member, ButtonStyle, SelectOption
 from discord.ui import View, button, Button, Select
 
-from utils import Default, Emoji, fetch_guild, DBGuildNotFound, create_guild, log
+from utils import Default, Emoji, fetch_guild, DBGuildNotFound, fetch_user, update_user_gems, log
 
 
 class BaseView(View):
@@ -73,7 +73,61 @@ class Advertise(Cog):
 	@command(description="Advertise in other servers")
 	@guilds(Default.SERVER)
 	async def advertise(self, inter: Interaction) -> None:
-		await inter.response.send_message("fix me mfkers", ephemeral=True)
+		await inter.response.send_message(content="Preparing embed, this will take a second...", ephemeral=True)
+
+		pages_list: list[Embed] = []
+		pages_options: list[list[SelectOption]] = []
+
+		user_data: dict = await fetch_user(self.bot.POOL, inter.user.id)
+
+		base_embed_data: dict = {
+			"title": "Advertise",
+			"description": f"{Emoji.CURRENCY} Balance: `{user_data['gems']}`",
+			"footer": {
+				"text": Default.FOOTER,
+				"icon_url": inter.user.avatar.url
+			}
+		}
+
+		current_page = Embed.from_dict(base_embed_data)
+		current_options: list[SelectOption] = []
+
+		for i, guild in enumerate(self.bot.guilds):
+			try:
+				guild_data: dict = await fetch_guild(self.bot.POOL, guild.id)
+			except DBGuildNotFound:
+				i -= 1
+
+				continue
+
+			label: str = f"{guild.name} ({Emoji.CURRENCY} `{guild_data['activity_power']}`)"
+
+			guild_users: list = guild_data["guild_users"]
+
+			guild_activity: str = f"{Emoji.SUPER_ACTIVE} `{len(guild_users[0])}` | {Emoji.ACTIVE} `{len(guild_users[1])}` | {Emoji.ONLINE} `{len(guild_users[2])}`"
+
+			current_page.add_field(name=label, value=guild_activity, inline=False)
+
+			current_options.append(SelectOption(label=label, value=str(guild.id)))
+
+			if i % 5 == 0:
+				pages_list.append(current_page)
+				current_page = Embed.from_dict(base_embed_data)
+
+				pages_options.append(current_options)
+				current_options.clear()
+
+		if current_page.fields:
+			pages_list.append(current_page)
+		if current_options:
+			pages_options.append(current_options)
+
+		view = BaseView(inter.user, pages_list, pages_options)
+		view.add_item(BuySelect(pages_options[0]))
+
+		await inter.edit_original_response(content="", embed=pages_list[0], view=view)
+
+		await view.wait()
 
 
 

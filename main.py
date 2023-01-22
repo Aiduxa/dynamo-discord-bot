@@ -29,7 +29,7 @@ class Dynamo(Bot):
 			)
 
 	
-	@loop(seconds=30.0)
+	@loop(minutes=1.0)
 	async def continous_handler(self) -> None:
 		await self.change_presence(activity=Activity(name=f"{len(self.users)} members", type=ActivityType.watching))
 
