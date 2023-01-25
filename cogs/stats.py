@@ -8,7 +8,7 @@ from psutil import cpu_percent, cpu_count, virtual_memory
 from sys import version
 from typing import NamedTuple
 
-from utils import Default, Emoji, get_db_latency, fetch_user, fetch_guild, get_guild_adembed
+from utils import Default, Emoji, get_db_latency, fetch_user, fetch_guild, get_guild_adembed, DBGuildNotFound
 
 # Transforms an argument into raw type
 class Point(NamedTuple):
@@ -95,7 +95,11 @@ class Stats(GroupCog, name="stats"):
 			if not guild:
 				"""Guild was not found"""
 				continue
-			guild_data = await fetch_guild(self.bot.POOL, id)
+			try:
+				guild_data = await fetch_guild(self.bot.POOL, id)
+				continue
+			except DBGuildNotFound:
+				await inter.response.send_message("Guild was not found")
 			activity_rank: int = user_data["activity_ranks"][id]
 			total_messages: int = user_data["servers_messages"][id]
 
