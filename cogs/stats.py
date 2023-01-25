@@ -21,9 +21,7 @@ class PointTransformer(Transformer):
         return Point(x=str(x.strip()), y=str(y.strip()))
     
 
-class Stats(GroupCog, name="stats"):Only you can see this • Dismiss message
-￼
-Message #dev-chat
+class Stats(GroupCog, name="stats"):
 
 	def __init__(self, bot: Bot) -> None:
 		self.bot = bot
