@@ -100,7 +100,6 @@ class Stats(GroupCog, name="stats"):
 				guild_data = await fetch_guild(self.bot.POOL, id)
 				
 			except DBGuildNotFound:
-				await inter.response.send_message("Guild was not found")
 				continue
 			activity_rank: int = user_data["activity_ranks"][id]
 			total_messages: int = user_data["servers_messages"][id]
