@@ -21,7 +21,10 @@ class PointTransformer(Transformer):
         return Point(x=str(x.strip()), y=str(y.strip()))
     
 
-class Stats(GroupCog, name="stats"):
+class Stats(GroupCog, name="stats"):Only you can see this • Dismiss message
+￼
+Message #dev-chat
+
 	def __init__(self, bot: Bot) -> None:
 		self.bot = bot
 		super().__init__()
@@ -97,9 +100,10 @@ class Stats(GroupCog, name="stats"):
 				continue
 			try:
 				guild_data = await fetch_guild(self.bot.POOL, id)
-				continue
+				
 			except DBGuildNotFound:
 				await inter.response.send_message("Guild was not found")
+				continue
 			activity_rank: int = user_data["activity_ranks"][id]
 			total_messages: int = user_data["servers_messages"][id]
 
