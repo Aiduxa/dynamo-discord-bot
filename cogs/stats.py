@@ -1,5 +1,5 @@
 from discord.ext.commands import GroupCog, Bot
-from discord.app_commands import command, guilds, Choice
+from discord.app_commands import command, guilds, Choice, autocomplete
 from discord import Interaction, Embed, Member, Guild
 from discord import __version__ as dpyversion
 from discord.utils import find as discord_find
@@ -21,8 +21,9 @@ class Stats(GroupCog, name="stats"):
 
 	@command(description="View the guild's stats")
 	@guilds(Default.SERVER)
+	@autocomplete(guild=guild_autocomplete)
 	async def guild(self, inter: Interaction, guild: str | None = None) -> None:
-		guild: Guild = await self.bot.fetch_guild(int(guild.value)) if guild else inter.guild
+		guild: Guild = await self.bot.fetch_guild(int(guild)) if guild else inter.guild
 		
 		guild_data: dict = {}
 		
