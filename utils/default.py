@@ -14,7 +14,7 @@ def log(title: str, message: str, error: bool = False):
 	print(f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}] [{title.upper()}{margin}]: {message}")
 
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from discord import Object as D_Object
 
@@ -30,9 +30,13 @@ class Default:
 	SERVER: D_Object = D_Object(id=1060218266670346370)
 	COLOR: int = Color.NEON
 	FOOTER: str = "Dynamo © 2023"
-	MULTIPLIER: float = 10.0
+	MULTIPLIER: int = 10.0
 	PREFIX: str = "dyn."
 	AD_EMBED_TITLE: str = "CLICK HERE TO JOIN!"
+	USER_COLUMNS: list[str] = field(default_factory=["last_message", "last_day_messages", "activity_rank", "servers"])
+	GUILD_COLUMNS: list[str] = field(default_factory=["activity_power"])
+	FORMAT: str = "%Y-%m-%d %H:%M:%S"
+	CHANNEL: str = "Dynamo's advertisements"
 
 @dataclass
 class ActivityRank:
@@ -45,3 +49,5 @@ class Emoji:
 	SUPER_ACTIVE: str = "<:super_active:1062614609028198410>"
 	ACTIVE: str = "<:active:1062614628909187143>"
 	ONLINE: str = "<:online:1062614646038732851>"
+	POWER: str = ":zap:"
+	CURRENCY: str = ":gem:"

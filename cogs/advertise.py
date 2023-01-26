@@ -1,13 +1,9 @@
-# not 100% working
-
 from discord.ext.commands import Cog, Bot
 from discord.app_commands import command, guilds
 from discord import Interaction, Embed, Member, ButtonStyle, SelectOption
 from discord.ui import View, button, Button, Select
 
-from random import randint
-
-from utils import Default, log
+from utils import Default, Emoji, fetch_guild, DBGuildNotFound, fetch_user, create_guild, update_user_gems, log
 
 
 class BaseView(View):
@@ -77,44 +73,62 @@ class Advertise(Cog):
 	@command(description="Advertise in other servers")
 	@guilds(Default.SERVER)
 	async def advertise(self, inter: Interaction) -> None:
-		pages: list[Embed] = []
+		await inter.response.send_message(content="Preparing embed, this will take a second...", ephemeral=True)
+
+		pages_list: list[Embed] = []
 		pages_options: list[list[SelectOption]] = []
 
-		base_embed: dict = {
+		user_data: dict = await fetch_user(self.bot.POOL, inter.user.id)
+
+		base_embed_data: dict = {
 			"title": "Advertise",
-			"color": Default.COLOR,
-			"footer": {"text": Default.FOOTER}
+			"description": f"{Emoji.CURRENCY} Balance: `{user_data['gems']}`",
+			"footer": {
+				"text": Default.FOOTER,
+				"icon_url": inter.user.avatar.url
+			}
 		}
 
-		current_embed = Embed.from_dict(base_embed)
-
+		current_page = Embed.from_dict(base_embed_data)
 		current_options: list[SelectOption] = []
-		for index, guild in enumerate(self.bot.guilds):
-			current_embed.add_field(name=f"{guild.name} (:zap: `{randint(1,100000)}`)", value=f":gem: **Price:** `{randint(1,10000)}`", inline=False)
-			current_options.append(SelectOption(label=guild.name, value=guild.id))
 
-			if ((index + 1) % 5) == 0:
-				pages.append(current_embed)
-				current_embed = Embed.from_dict(base_embed)
+		for i, guild in enumerate(self.bot.guilds):
+			guild_data: dict = {}
+			
+			try:
+				guild_data = await fetch_guild(self.bot.POOL, guild.id)
+			except DBGuildNotFound:
+				guild_data = await create_guild(self.bot.POOL, guild.id)
 
-				if (index + 5) <= len(self.bot.guilds):
-					pages_options.append(current_options)
-					current_options.clear()
+			label: str = f"{guild.name} ({Emoji.CURRENCY} `{guild_data['activity_power']}`)"
 
-		if len(current_embed.fields) >= 1:
-			pages.append(current_embed)
+			guild_users: list = guild_data["guild_users"]
+
+			guild_activity: str = f"{Emoji.SUPER_ACTIVE} `{len(guild_users[0])}` | {Emoji.ACTIVE} `{len(guild_users[1])}` | {Emoji.ONLINE} `{len(guild_users[2])}`"
+
+			current_page.add_field(name=label, value=guild_activity, inline=False)
+
+			current_options.append(SelectOption(label=label, value=str(guild.id)))
+
+			if i % 5 == 0:
+				pages_list.append(current_page)
+				current_page = Embed.from_dict(base_embed_data)
+
+				pages_options.append(current_options)
+				current_options.clear()
+
+		if current_page.fields:
+			pages_list.append(current_page)
+		if current_options:
 			pages_options.append(current_options)
 
-		view = BaseView(inter.user, pages, pages_options)
-
-		if len(pages) == 1:
-			view.next.disabled = True
-
+		view = BaseView(inter.user, pages_list, pages_options)
 		view.add_item(BuySelect(pages_options[0]))
 
-		await inter.response.send_message(embed=pages[0], view=view, ephemeral=True)
+		await inter.edit_original_response(content="", embed=pages_list[0], view=view)
 
 		await view.wait()
+
 
 
 async def setup(bot: Bot) -> None:

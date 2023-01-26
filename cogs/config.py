@@ -1,9 +1,9 @@
-from discord.ext.commands import GroupCog, Bot, Context
+from discord.ext.commands import GroupCog, Bot
 from discord.app_commands import command, guilds
-from discord import Interaction, Embed, Member, ButtonStyle, Attachment, Permissions
+from discord import Interaction, Embed, Member, ButtonStyle, Attachment, Permissions, PermissionOverwrite, Forbidden, Guild, TextChannel, utils
 from discord.ui import View, button, Button
 
-from utils import Default, log, update_adembed, get_adembed, update_custom_invite_url
+from utils import Default, log, update_guild_adembed, get_guild_adembed, update_guild_invite_url, fetch_guild, create_guild, update_guild_adchannel, DBGuildNotFound
 
 
 class BaseView(View):
@@ -26,7 +26,7 @@ class BaseView(View):
 		message: str = ":white_check_mark: Changes saved!"
 
 		try:
-			await update_adembed(self.bot.POOL, self.guild_id, self.ad_embed)
+			await update_guild_adembed(self.bot.POOL, self.guild_id, self.ad_embed)
 		except Exception as e:
 			log("error", str(e))
 
@@ -55,7 +55,7 @@ class Config(GroupCog, name="config"):
 	async def ad(self, inter: Interaction, title: str = Default.AD_EMBED_TITLE, description: str = "", color: str = "000000", display_owner: bool = False, display_logo: bool = False, banner: Attachment | None = None) -> None:
 		if (title == Default.AD_EMBED_TITLE) and (description == "") and (color == "000000") and (display_owner == False) and (display_logo == False) and (banner == None):
 			try:
-				ad_embed_data: dict = await get_adembed(self.bot.POOL, int(inter.guild.id))
+				ad_embed_data: dict = await get_guild_adembed(self.bot.POOL, int(inter.guild.id))
 			except Exception as e:
 				log("error", str(e))
 
@@ -128,13 +128,64 @@ class Config(GroupCog, name="config"):
 			message: str = ":white_check_mark: Saved new invitation link."
 
 			try:
-				await update_custom_invite_url(self.bot.POOL, int(inter.guild.id), invite)
+				await update_guild_invite_url(self.bot.POOL, int(inter.guild.id), invite)
 			except Exception as e:
 				log("error", str(e))
 
 				message = ":warning: Something wen't wrong!"
 
 			await inter.response.send_message(message, ephemeral=True)
+
+
+	@command()
+	@guilds(Default.SERVER)
+	async def channel(self, inter: Interaction, name: str | None = None) -> None:
+		guild: Guild = inter.guild
+
+		try:
+			guild_data: dict = await fetch_guild(self.bot.POOL, guild.id)
+		except DBGuildNotFound:
+			await create_guild(self.bot.POOL, guild.id)
+		
+		try:
+			channel: TextChannel | None = self.bot.get_channel(int(guild_data["ad_channel"]))	
+		except:
+			channel = None
+
+		if channel != None:
+			if name != None:
+				await channel.edit(name=name)
+
+				await inter.response.send_message(f"Updated {channel.mention}", ephemeral=True)
+
+			else:
+				await inter.response.send_message(f"{channel.mention} already exists.", ephemeral=True)
+
+			return
+
+		permissions = dict(Permissions(view_channel=True))
+
+		overwrites = {guild.default_role: PermissionOverwrite(**permissions)}
+
+		channel_name = name if name != None else Default.CHANNEL
+
+		try:
+			channel = await guild.create_text_channel(channel_name, position=0, overwrites=overwrites)
+
+		except Exception as e:
+			if type(e) == Forbidden:
+				await inter.response.send_message("Missing `Manage Channels` permission.", ephemeral=True)
+
+				return
+
+			await inter.response.send_message("Something went wrong!", ephemeral=True)
+
+			log("error", str(e), True)
+
+		else:
+			await inter.response.send_message(f":white_check_mark: Created {channel.mention}.", ephemeral=True)
+
+			await update_guild_adchannel(self.bot.POOL, guild.id, channel.id)
 
 
 async def setup(bot: Bot) -> None:
