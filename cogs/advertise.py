@@ -3,7 +3,7 @@ from discord.app_commands import command, guilds
 from discord import Interaction, Embed, Member, ButtonStyle, SelectOption
 from discord.ui import View, button, Button, Select
 
-from utils import Default, Emoji, fetch_guild, DBGuildNotFound, fetch_user, update_user_gems, log
+from utils import Default, Emoji, fetch_guild, DBGuildNotFound, fetch_user, create_guild, update_user_gems, log
 
 
 class BaseView(View):
@@ -93,12 +93,12 @@ class Advertise(Cog):
 		current_options: list[SelectOption] = []
 
 		for i, guild in enumerate(self.bot.guilds):
+			guild_data: dict = {}
+			
 			try:
-				guild_data: dict = await fetch_guild(self.bot.POOL, guild.id)
+				guild_data = await fetch_guild(self.bot.POOL, guild.id)
 			except DBGuildNotFound:
-				i -= 1
-
-				continue
+				guild_data = await create_guild(self.bot.POOL, guild.id)
 
 			label: str = f"{guild.name} ({Emoji.CURRENCY} `{guild_data['activity_power']}`)"
 
