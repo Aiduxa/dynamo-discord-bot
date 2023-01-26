@@ -1,24 +1,13 @@
-from discord.ext.commands import GroupCog, Bot, GuildNotFound
-from discord.app_commands import command, guilds, Transformer, Transform
+from discord.ext.commands import GroupCog, Bot
+from discord.app_commands import command, guilds, Choice
 from discord import Interaction, Embed, Member, Guild
-from discord.utils import get, find
 from discord import __version__ as dpyversion
+from discord.utils import find as discord_find
 from platform import system, release
 from psutil import cpu_percent, cpu_count, virtual_memory
 from sys import version
-from typing import NamedTuple
 
-from utils import Default, Emoji, get_db_latency, fetch_user, fetch_guild, get_guild_adembed, DBGuildNotFound, DBUserNotFound, create_user, create_guild
-
-# Transforms an argument into raw type
-class Point(NamedTuple):
-    x: str
-    y: str
-    
-class PointTransformer(Transformer):
-    async def transform(self, inter: Interaction, value: str) -> Point:
-        (x, _, y) = value.partition(",")
-        return Point(x=str(x.strip()), y=str(y.strip()))
+from utils import Default, Emoji, get_db_latency, fetch_user, fetch_guild, DBGuildNotFound, DBUserNotFound, create_user, create_guild
     
 
 class Stats(GroupCog, name="stats"):
@@ -26,51 +15,37 @@ class Stats(GroupCog, name="stats"):
 	def __init__(self, bot: Bot) -> None:
 		self.bot = bot
 		super().__init__()
-  
-	# Ur fucking shit doesn't work fella, neither do I understand it
-
-	# async def guild_autocomplete(self, _inter: Interaction, current: Guild) -> list[Choice[str]]:
-	#  	return [Choice(name=guild.name, value=str(guild.id)) for guild in self.bot.guilds if current.lower() in guild.name.lower()][:25]
+		
+	async def guild_autocomplete(self, _inter: Interaction, current: Guild) -> list[Choice[str]]:
+		return [Choice(name=guild.name, value=str(guild.id)) for guild in self.bot.guilds if current.lower() in guild.name.lower()][:25]
 
 	@command(description="View the guild's stats")
 	@guilds(Default.SERVER)
-	async def guild(self, inter: Interaction, guild: Transform[Point, PointTransformer] | None = None) -> None:
+	async def guild(self, inter: Interaction, guild: str | None = None) -> None:
+		guild: Guild = await self.bot.fetch_guild(int(guild.value)) if guild else inter.guild
+		
+		guild_data: dict = {}
+		
+		try:
+			guild_data = await fetch_guild(self.bot.POOL, guild.id)
+		except DBGuildNotFound:
+			guild_data = await create_guild(self.bot.POOL, guild.id)
 
-		if isinstance(guild, str):
-			if guild.is_digit():
-				try:
-					guild = get(self.bot.guilds, id=guild)
-				except GuildNotFound:
-					await inter.response.send_message("Supplied guild was not found, check your typing and try again!")
-		elif isinstance(guild, str):
-			try:
-				guild = get(self.bot.guilds, name=guild)
-			except GuildNotFound:
-				await inter.response.send_message("Supplied guild was not found, check your typing and try again!")
-		else:
-			guild = inter.guild
+		guild_users: list[list[str]] = guild_data['guild_users']
 
-		guild_data: dict = await fetch_guild(self.bot.POOL, guild.id)
-
-		super_active: int = 0
-		active: int = 0
-		online: int = 0
-
-		# Counts activity ranks
-		for user in guild_data["guild_users"]:
-			user_data: dict = await fetch_user(self.bot.POOL, str(user[0]))
-			if user_data["activity_ranks"][str(guild.id)] == 0: online += 1
-			elif user_data["activity_ranks"][str(guild.id)] == 1: active += 1
-			elif user_data["activity_ranks"][str(guild.id)] == 2: super_active += 1
-
+		for i in range(3):
+			if len(guild_users) < (i + 1):
+				guild_users.append([])
 
 		embed = Embed(
 			title=f"{guild.name}'s statistics",
-			description=f"**Power:** ``{guild_data['activity_power']}`` {Emoji.POWER}\n\n{Emoji.SUPER_ACTIVE} **Super active:** ``{super_active}``\n {Emoji.ACTIVE} **Active:** ``{active}``\n {Emoji.ONLINE} **Online:** ``{online}``\n\n ",
+			description=f"{Emoji.POWER} `{guild_data['activity_power']}`\n\n{Emoji.SUPER_ACTIVE} **Super active:** `{len(guild_users[2])}`\n{Emoji.ACTIVE} **Active:** `{len(guild_users[1]) or 0}`\n{Emoji.ONLINE} **Online:** `{len(guild_users[0])}`",
 			color=Default.COLOR
 		)
+
 		embed.set_footer(text=Default.FOOTER)
-  
+		embed.set_thumbnail(url=guild.icon.url)
+
 		await inter.response.send_message(embed=embed, ephemeral=True)
 
 
@@ -97,7 +72,7 @@ class Stats(GroupCog, name="stats"):
 
 		# Loops through user's servers, gets server, it's messages, title, user's activity rank
 		for server_id in dict(user_data["servers_messages"]).keys():
-			guild = find(lambda g: g.id == int(server_id), self.bot.guilds)
+			guild = discord_find(lambda g: g.id == int(server_id), self.bot.guilds)
 			
 			if not guild:
 				"""Guild was not found"""
