@@ -8,7 +8,7 @@ from psutil import cpu_percent, cpu_count, virtual_memory
 from sys import version
 from typing import NamedTuple
 
-from utils import Default, Emoji, get_db_latency, fetch_user, fetch_guild, get_guild_adembed, DBGuildNotFound
+from utils import Default, Emoji, get_db_latency, fetch_user, fetch_guild, get_guild_adembed, DBGuildNotFound, DBUserNotFound, create_user, create_guild
 
 # Transforms an argument into raw type
 class Point(NamedTuple):
@@ -77,47 +77,54 @@ class Stats(GroupCog, name="stats"):
 	@command(description="View your stats")
 	@guilds(Default.SERVER)
 	async def member(self, inter: Interaction, member: Member | None) -> None:
+		user = member if member else inter.user
 
-		if not member:
-			member = inter.user
+		user_data: dict = {}
 
-		user_data: dict = await fetch_user(self.bot.POOL, member.id)
+		try:
+			user_data = await fetch_user(self.bot.POOL, user.id)
+		except DBUserNotFound:
+			user_data = await create_user(self.bot.POOL, user.id)
 
 		embed = Embed(
-			title=f"{member.name}'s statistics",
-			description=f"{user_data['gems']} {Emoji.CURRENCY}",
+			title=f"{user.name}'s statistics",
+			description=f"{Emoji.CURRENCY} `{user_data['gems']}`",
 			color=Default.COLOR
 		)
+
 		embed.set_footer(text=Default.FOOTER)
+		embed.set_thumbnail(url=user.avatar.url)
 
 		# Loops through user's servers, gets server, it's messages, title, user's activity rank
-		for id in dict(user_data["servers_messages"]).keys():
-			guild = find(lambda g: g.id == int(id), self.bot.guilds)
+		for server_id in dict(user_data["servers_messages"]).keys():
+			guild = find(lambda g: g.id == int(server_id), self.bot.guilds)
+			
 			if not guild:
 				"""Guild was not found"""
 				continue
+
+			guild_data: dict = {}
+
 			try:
-				guild_data = await fetch_guild(self.bot.POOL, id)
-				
+				guild_data = await fetch_guild(self.bot.POOL, server_id)		
 			except DBGuildNotFound:
-				continue
-			activity_rank: int = user_data["activity_ranks"][id]
-			total_messages: int = user_data["servers_messages"][id]
+				guild_data = await create_guild(self.bot.POOL, server_id)
+
+			raw_activity_rank: int = user_data["activity_ranks"][server_id]
 
 			# activity_rank value to emoji
 
-			if activity_rank == 1:
-				activity_rank: str = Emoji.ACTIVE
-			elif activity_rank == 2:
-				activity_rank: str = Emoji.SUPER_ACTIVE
+			if raw_activity_rank == 2:
+				activity_rank: str = f"{Emoji.SUPER_ACTIVE} `super active`"
+			elif raw_activity_rank == 1:
+				activity_rank: str = f"{Emoji.ACTIVE} `active`"
 			else:
-				activity_rank: str = Emoji.ONLINE
+				activity_rank: str = f"{Emoji.ONLINE} `online`"
 
 			embed.add_field(
-				name=f"***{guild.name}*** **({Emoji.POWER} ``{guild_data['activity_power']}``)**",
-				value=f"\n*Activity rank:* {activity_rank}\n*Total sent messages:* ``{total_messages}``"
+				name=f"***{guild.name}*  ({Emoji.POWER} `{guild_data['activity_power']}`)**",
+				value=f"\nActivity rank: {activity_rank}\nTotal sent messages: `{user_data['servers_messages'][server_id]}`"
 			)
-
 
 		await inter.response.send_message(embed=embed, ephemeral=True)
 
