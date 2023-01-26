@@ -40,7 +40,7 @@ async def create_guild(pool: Pool, guild_id: str | int) -> None:
 	guild_id = int(guild_id)
 
 	async with pool.acquire() as conn:
-		await conn.execute(f"UPDATE servers SET id = $1", guild_id)
+		await conn.execute(f"INSERT INTO servers (id) VALUES ($1)", guild_id)
 
 	return await fetch_guild(pool, guild_id)
 
