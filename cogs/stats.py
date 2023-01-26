@@ -41,7 +41,7 @@ class Stats(GroupCog, name="stats"):
 
 		embed = Embed(
 			title=f"{guild.name}'s statistics",
-			description=f"{Emoji.POWER} `{guild_data['activity_power']}`\n\n{Emoji.SUPER_ACTIVE} **Super active:** `{len(guild_users[2])}`\n{Emoji.ACTIVE} **Active:** `{len(guild_users[1]) or 0}`\n{Emoji.ONLINE} **Online:** `{len(guild_users[0])}`",
+			description=f"{Emoji.POWER} **Power:** `{guild_data['activity_power']}`\n\n{Emoji.SUPER_ACTIVE} **Super active:** `{len(guild_users[2])}`\n{Emoji.ACTIVE} **Active:** `{len(guild_users[1]) or 0}`\n{Emoji.ONLINE} **Online:** `{len(guild_users[0])}`",
 			color=Default.COLOR
 		)
 
