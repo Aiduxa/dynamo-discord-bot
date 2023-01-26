@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv(f"{getcwd()}/utils/.env")
 
-from utils import Default, log, fetch_guild, DBGuildNotFound
+from utils import Default, log, fetch_guild, DBGuildNotFound, create_guild
 
 
 class Dynamo(Bot):
@@ -115,12 +115,14 @@ async def app_commands_interaction_check(inter: Interaction) -> bool:
 
 	ad_channel_exists: bool = False
 
+	guild_data: dict = {}
+
 	try:
-		guild_data: dict = await fetch_guild(bot.POOL, guild.id)
+		guild_data = await fetch_guild(bot.POOL, guild.id)
 	except DBGuildNotFound:
-		pass
+		guild_data = await create_guild(bot.POOL, guild.id)
 	else:
-		if guild_data["ad_channel"] != "":
+		if guild_data["ad_channel"]:
 			ad_channel_exists = True
 
 	if ad_channel_exists == False:
