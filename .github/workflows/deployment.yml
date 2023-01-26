@@ -1,0 +1,32 @@
+name: Deploy
+
+on: push
+
+jobs:
+  build:
+  
+    environment: SECRETS
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Copy repository contents via scp
+      uses: appleboy/scp-action@master
+      env:
+        HOST: ${{ secrets.HOST }}
+        USERNAME: ${{ secrets.USERNAME }}
+        PORT: ${{ secrets.PORT }}
+        PASSWORD: ${{ secrets.PASSWORD }}
+      with:
+        source: "."
+        target: "~"
+
+    - name: Executing remote command
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        USERNAME: ${{ secrets.USERNAME }}
+        PORT: ${{ secrets.PORT }}
+        PASSWORD: ${{ secrets.PASSWORD }}
+        script: systemctl restart dynamo
