@@ -1,3 +1,5 @@
+# :warning: DEPRICATED due to conflicts with Discord's ToS.
+
 # Welcome to the dynamo-discord-bot!
 
 Dynamo is a powerful and innovative discord bot that is focused on providing an unparalleled advertising experience for discord users. It is currently in beta and is available for users to test and provide feedback.
